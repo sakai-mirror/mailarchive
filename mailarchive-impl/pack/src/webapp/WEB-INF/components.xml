@@ -3,30 +3,47 @@
 
 <beans>
 
+    <!-- database beans -->
+    <bean id="org.sakaiproject.mailarchive.impl.MailArchiveServiceSqlDb2"       class="org.sakaiproject.mailarchive.impl.MailArchiveServiceSqlDb2"     singleton="true"/>
+    <bean id="org.sakaiproject.mailarchive.impl.MailArchiveServiceSqlDefault"   class="org.sakaiproject.mailarchive.impl.MailArchiveServiceSqlDefault" singleton="true"/>
+    <bean id="org.sakaiproject.mailarchive.impl.MailArchiveServiceSqlHSql"      class="org.sakaiproject.mailarchive.impl.MailArchiveServiceSqlHSql"    singleton="true"/>
+    <bean id="org.sakaiproject.mailarchive.impl.MailArchiveServiceSqlMsSql"     class="org.sakaiproject.mailarchive.impl.MailArchiveServiceSqlMsSql"   singleton="true"/>
+    <bean id="org.sakaiproject.mailarchive.impl.MailArchiveServiceSqlMySql"     class="org.sakaiproject.mailarchive.impl.MailArchiveServiceSqlMySql"   singleton="true"/>
+    <bean id="org.sakaiproject.mailarchive.impl.MailArchiveServiceSqlOracle"    class="org.sakaiproject.mailarchive.impl.MailArchiveServiceSqlOracle"  singleton="true"/>
+
 	<bean id="org.sakaiproject.mailarchive.api.MailArchiveService"
 			class="org.sakaiproject.mailarchive.impl.DbMailArchiveService"
-			init-method="init"
-			destroy-method="destroy"
-			singleton="true">
-		<property name="memoryService"><ref bean="org.sakaiproject.memory.api.MemoryService"/></property>
-		<property name="sqlService"><ref bean="org.sakaiproject.db.api.SqlService"/></property>
-		<property name="notificationService"><ref bean="org.sakaiproject.event.api.NotificationService"/></property>
-		<property name="serverConfigurationService"><ref bean="org.sakaiproject.component.api.ServerConfigurationService"/></property>
-		<property name="entityManager"><ref bean="org.sakaiproject.entity.api.EntityManager"/></property>
-		<property name="authzGroupService"><ref bean="org.sakaiproject.authz.api.AuthzGroupService"/></property>
-		<property name="sessionManager"><ref bean="org.sakaiproject.tool.api.SessionManager"/></property>
-		<property name="securityService"><ref bean="org.sakaiproject.authz.api.SecurityService"/></property>
-		<property name="userDirectoryService"><ref bean="org.sakaiproject.user.api.UserDirectoryService"/></property>
-		<property name="timeService"><ref bean="org.sakaiproject.time.api.TimeService"/></property>
-		<property name="eventTrackingService"><ref bean="org.sakaiproject.event.api.EventTrackingService"/></property>
-		<property name="idManager"><ref bean="org.sakaiproject.id.api.IdManager"/></property>
-		<property name="threadLocalManager"><ref bean="org.sakaiproject.thread_local.api.ThreadLocalManager"/></property>
-		<property name="siteService"><ref bean="org.sakaiproject.site.api.SiteService"/></property>
+            init-method="init" destroy-method="destroy" singleton="true">
 
- 		<property name="containerTableName"><value>MAILARCHIVE_CHANNEL</value></property>
- 		<property name="resourceTableName"><value>MAILARCHIVE_MESSAGE</value></property>
- 		<property name="locksInDb"><value>false</value></property>
- 		<property name="autoDdl"><value>${auto.ddl}</value></property>
+        <property name="memoryService">              <ref bean="org.sakaiproject.memory.api.MemoryService"/>                   </property>
+        <property name="sqlService">                 <ref bean="org.sakaiproject.db.api.SqlService"/>                          </property>
+        <property name="notificationService">        <ref bean="org.sakaiproject.event.api.NotificationService"/>              </property>
+        <property name="serverConfigurationService"> <ref bean="org.sakaiproject.component.api.ServerConfigurationService"/>   </property>
+        <property name="entityManager">              <ref bean="org.sakaiproject.entity.api.EntityManager"/>                   </property>
+        <property name="authzGroupService">          <ref bean="org.sakaiproject.authz.api.AuthzGroupService"/>                </property>
+        <property name="sessionManager">             <ref bean="org.sakaiproject.tool.api.SessionManager"/>                    </property>
+        <property name="securityService">            <ref bean="org.sakaiproject.authz.api.SecurityService"/>                  </property>
+        <property name="userDirectoryService">       <ref bean="org.sakaiproject.user.api.UserDirectoryService"/>              </property>
+        <property name="timeService">                <ref bean="org.sakaiproject.time.api.TimeService"/>                       </property>
+        <property name="eventTrackingService">       <ref bean="org.sakaiproject.event.api.EventTrackingService"/>             </property>
+        <property name="idManager">                  <ref bean="org.sakaiproject.id.api.IdManager"/>                           </property>
+        <property name="threadLocalManager">         <ref bean="org.sakaiproject.thread_local.api.ThreadLocalManager"/>        </property>
+        <property name="siteService">                <ref bean="org.sakaiproject.site.api.SiteService"/>                       </property>
+
+        <property name="containerTableName"> <value>MAILARCHIVE_CHANNEL</value> </property>
+        <property name="resourceTableName">  <value>MAILARCHIVE_MESSAGE</value> </property>
+        <property name="locksInDb">          <value>false</value>               </property>
+        <property name="autoDdl">            <value>${auto.ddl}</value>         </property>
+        <property name="databaseBeans">
+           <map>
+              <entry key="db2"    ><ref bean="org.sakaiproject.mailarchive.impl.MailArchiveServiceSqlDb2"    /></entry>
+              <entry key="default"><ref bean="org.sakaiproject.mailarchive.impl.MailArchiveServiceSqlDefault"/></entry>
+              <entry key="hsqldb" ><ref bean="org.sakaiproject.mailarchive.impl.MailArchiveServiceSqlHSql"   /></entry>
+              <entry key="mssql"  ><ref bean="org.sakaiproject.mailarchive.impl.MailArchiveServiceSqlMsSql"  /></entry>
+              <entry key="mysql"  ><ref bean="org.sakaiproject.mailarchive.impl.MailArchiveServiceSqlMySql"  /></entry>
+              <entry key="oracle" ><ref bean="org.sakaiproject.mailarchive.impl.MailArchiveServiceSqlOracle" /></entry>
+           </map>
+        </property>
 	</bean>
 
 </beans>
