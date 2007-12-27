@@ -61,6 +61,9 @@ import org.sakaiproject.util.ResourceLoader;
 import org.sakaiproject.util.StringUtil;
 import org.sakaiproject.util.Validator;
 
+import org.sakaiproject.time.cover.TimeService;
+import java.lang.Thread;
+
 /**
  * <p>
  * MailboxAction is a the Sakai mailbox tool.
@@ -123,15 +126,7 @@ public class MailboxAction extends PagedResourceActionII
 	protected List readResourcesPage(SessionState state, int first, int last)
 	{
 
-		List rv = new Vector();
-		if (state.getAttribute(STATE_ALL_MESSAGES) != null)
-		{
-			rv = (List) state.getAttribute(STATE_ALL_MESSAGES);
-		}
-
-		PagingPosition page = new PagingPosition(first, last);
-		page.validate(rv.size());
-		rv = rv.subList(page.getFirst() - 1, page.getLast());
+		List rv = readPagedResources(state, first, last);
 
 		return rv;
 	}
@@ -245,6 +240,43 @@ public class MailboxAction extends PagedResourceActionII
 
 	} // class MyComparator
 
+	protected List readPagedResources(SessionState state, int first, int last)
+	{
+		// read all channel messages
+		List allMessages = null;
+		try
+		{
+			MailArchiveChannel channel = MailArchiveService.getMailArchiveChannel((String) state.getAttribute(STATE_CHANNEL_REF));
+System.out.println("Channel count = "+channel.getCount());
+			String search = (String) state.getAttribute(STATE_SEARCH);
+System.out.println("Search = "+search);
+			PagingPosition pages = new PagingPosition(first, last);
+System.out.println("first="+first+" last="+last);
+
+			allMessages = channel.getPagedMessages(search, true, pages);
+		}
+		catch (PermissionException e)
+		{
+		}
+		catch (IdUnusedException e)
+		{
+		}
+
+		// deal with no messages
+		if (allMessages == null) return new Vector();
+
+		// if other than ascending date, sort them all
+		boolean ascending = ((Boolean) state.getAttribute(STATE_ASCENDING)).booleanValue();
+		int sort = ((Integer) state.getAttribute(STATE_SORT)).intValue();
+		if ((allMessages.size() > 1) && ((!ascending) || (sort != SORT_DATE)))
+		{
+			Collections.sort(allMessages, new MyComparator(sort, ascending));
+		}
+
+		return allMessages;
+
+	} // readAllResources
+
 	/**
 	 * Implement this to return alist of all the resources that there are to page. Sort them as appropriate.
 	 */
@@ -256,6 +288,7 @@ public class MailboxAction extends PagedResourceActionII
 		{
 			MailArchiveChannel channel = MailArchiveService.getMailArchiveChannel((String) state.getAttribute(STATE_CHANNEL_REF));
 
+			// TODO: This needs to be paged !!!!
 			allMessages = channel.getMessages(null, true);
 		}
 		catch (PermissionException e)
@@ -368,6 +401,8 @@ public class MailboxAction extends PagedResourceActionII
 		String mode = (String) state.getAttribute(STATE_MODE);
 
 		context.put(Menu.CONTEXT_ACTION, state.getAttribute(STATE_ACTION));
+                String search = (String) state.getAttribute(STATE_SEARCH);
+System.out.println("search = " + search);
 
 		if ("list".equals(mode))
 		{
@@ -386,6 +421,21 @@ public class MailboxAction extends PagedResourceActionII
 
 		else if (MODE_OPTIONS.equals(mode))
 		{
+// A bad hack to fill up a mailbox quickly to test paging.
+System.out.println("HACKING!!!!");
+try {
+			MailArchiveChannel channel = MailArchiveService.getMailArchiveChannel((String) state.getAttribute(STATE_CHANNEL_REF));
+System.out.println("channel = " + channel);
+
+    List mailHeaders = new Vector();
+		for ( int i=1; i< 5; i++ ) {
+    channel.addMailArchiveMessage("Subject "+TimeService.newTime(), "from "+TimeService.newTime(), TimeService.newTime(), mailHeaders, null, "Body "+TimeService.newTime());
+			Thread.sleep(2);
+		}
+} catch (Exception e ) {
+System.out.println("BOLLOX");
+e.printStackTrace();
+}
 			return buildOptionsPanelContext(portlet, context, rundata, state);
 		}
 
