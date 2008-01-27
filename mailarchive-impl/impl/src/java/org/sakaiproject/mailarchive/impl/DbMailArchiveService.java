@@ -29,16 +29,23 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.sakaiproject.db.api.SqlReader;
 import org.sakaiproject.db.api.SqlService;
+import org.sakaiproject.entity.api.Entity;
 import org.sakaiproject.message.api.Message;
 import org.sakaiproject.message.api.MessageChannel;
 import org.sakaiproject.message.api.MessageChannelEdit;
 import org.sakaiproject.message.api.MessageEdit;
 import org.sakaiproject.time.api.Time;
-import org.sakaiproject.util.BaseDbDoubleStorage;
+// HACK PACKAGE
+// import org.sakaiproject.util.BaseDbDoubleStorage;
 import org.sakaiproject.util.StorageUser;
 import org.sakaiproject.util.Xml;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+
+import org.sakaiproject.javax.PagingPosition;
+import org.sakaiproject.util.FormattedText;
+import org.sakaiproject.util.StringUtil;
+import org.sakaiproject.mailarchive.api.MailArchiveMessage;
 
 /**
  * <p>
@@ -180,7 +187,7 @@ public class DbMailArchiveService extends BaseMailArchiveService
 	/**********************************************************************************************************************************************************************************************************************************************************
 	 * BaseMessageService extensions
 	 *********************************************************************************************************************************************************************************************************************************************************/
-
+     
 	/**
 	 * Construct a Storage object.
 	 * 
@@ -210,7 +217,34 @@ public class DbMailArchiveService extends BaseMailArchiveService
 					"PUBVIEW", FIELDS, m_locksInDb, "channel", "message", user, m_sqlService);
 
 		} // DbStorage
-
+        
+        // A call back to match before the XML is parsed and turned into a Resource
+        // If we can decide here - it is more efficient that sending the XML through SAX
+        // But for now - we wil do SAX - at least SAX does not waste too much memory
+        // App server CPU is not the most critical resource.  So we return "I don't know"
+        @Override
+        public int matchXml(String theXml, String search)
+        {
+            return 0;  // Neither yes (1) or no(-1)
+        }
+        
+        // A call back to allow us to do our own search decisions after
+        // an mesage has been parsed and converted to a resource
+        @Override
+        public boolean matchEntity(Entity entry, String search)
+        {
+            // System.out.println("DB MAIL ENTITY MATCHING!!!! "+search+" ent="+entry);
+            MailArchiveMessage msg = (MailArchiveMessage) entry;
+			if (StringUtil.containsIgnoreCase(msg.getMailArchiveHeader().getSubject(), search)
+					|| StringUtil.containsIgnoreCase(msg.getMailArchiveHeader().getFromAddress(), search)
+					|| StringUtil.containsIgnoreCase(FormattedText.convertFormattedTextToPlaintext(msg.getBody()), search))
+			{
+                // System.out.println("YAYAYAYAYAY");
+				return true;
+			}
+            return false;
+        }
+        
 		/** Channels * */
 
 		public boolean checkChannel(String ref)
@@ -275,6 +309,22 @@ public class DbMailArchiveService extends BaseMailArchiveService
 			return super.getAllResources(channel);
 		}
 
+        public List getMessages(MessageChannel channel,String search, boolean asc, PagingPosition pager)
+		{
+			return super.getAllResources(channel, null, search, asc, pager);
+		}
+        
+        public int countMessages(MessageChannel channel)
+        {
+            return super.countResources(channel);
+        }
+        
+        public int countMessages(MessageChannel channel, String search)
+        {
+            return super.countResources(channel, search);
+        }
+        
+        
 		public MessageEdit putMessage(MessageChannel channel, String id)
 		{
 			return (MessageEdit) super.putResource(channel, id, null);
@@ -301,6 +351,11 @@ public class DbMailArchiveService extends BaseMailArchiveService
 		}
 
 		public List getMessages(MessageChannel channel, Time afterDate, int limitedToLatest, String draftsForId, boolean pubViewOnly)
+		{
+			return super.getResources(channel, afterDate, limitedToLatest, draftsForId, pubViewOnly);
+		}
+ 
+        public List getMessages(MessageChannel channel, Time afterDate, int limitedToLatest, String draftsForId, boolean pubViewOnly, PagingPosition pager)
 		{
 			return super.getResources(channel, afterDate, limitedToLatest, draftsForId, pubViewOnly);
 		}

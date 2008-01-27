@@ -138,12 +138,25 @@ public class MailboxAction extends PagedResourceActionII
 	 */
 	protected int sizeResources(SessionState state)
 	{
-		int size = 0;
-		if (state.getAttribute(STATE_ALL_MESSAGES) != null)
+        // TODO: Use Session Data as long as Search is Unchanged
+        try
 		{
-			size = ((List) state.getAttribute(STATE_ALL_MESSAGES)).size();
+			MailArchiveChannel channel = MailArchiveService.getMailArchiveChannel((String) state.getAttribute(STATE_CHANNEL_REF));
+			// TODO: Make Count fast in the DB implementation
+      		String search = (String) state.getAttribute(STATE_SEARCH);
+            System.out.println("Search = "+search);
+            int cCount = channel.countMessages(search);
+            System.out.println("SizeResources Returns Channel count = "+cCount);
+			return cCount;
 		}
-		return size;
+		catch (PermissionException e)
+		{
+		}
+		catch (IdUnusedException e)
+		{
+		}
+        System.out.println("sizeResources failed somehow");
+        return 0;
 	}
 
 	/**
@@ -244,16 +257,19 @@ public class MailboxAction extends PagedResourceActionII
 	{
 		// read all channel messages
 		List allMessages = null;
+		boolean ascending = ((Boolean) state.getAttribute(STATE_ASCENDING)).booleanValue();
+		int sort = ((Integer) state.getAttribute(STATE_SORT)).intValue();
+System.out.println("Sort ="+ sort);
+
 		try
 		{
 			MailArchiveChannel channel = MailArchiveService.getMailArchiveChannel((String) state.getAttribute(STATE_CHANNEL_REF));
-System.out.println("Channel count = "+channel.getCount());
 			String search = (String) state.getAttribute(STATE_SEARCH);
 System.out.println("Search = "+search);
 			PagingPosition pages = new PagingPosition(first, last);
 System.out.println("first="+first+" last="+last);
-
-			allMessages = channel.getPagedMessages(search, true, pages);
+			// TODO: This should be called getPagedMessages by Date
+			allMessages = channel.getPagedMessages(search, ascending, pages);
 		}
 		catch (PermissionException e)
 		{
@@ -265,6 +281,9 @@ System.out.println("first="+first+" last="+last);
 		// deal with no messages
 		if (allMessages == null) return new Vector();
 
+		// TODO: For now we only do date sorting  and use storage to do it :)
+/*
+		// TODO : Cannot do paging in the store if we are sorting on something other than date
 		// if other than ascending date, sort them all
 		boolean ascending = ((Boolean) state.getAttribute(STATE_ASCENDING)).booleanValue();
 		int sort = ((Integer) state.getAttribute(STATE_SORT)).intValue();
@@ -272,16 +291,30 @@ System.out.println("first="+first+" last="+last);
 		{
 			Collections.sort(allMessages, new MyComparator(sort, ascending));
 		}
-
+*/
 		return allMessages;
 
-	} // readAllResources
+	} // readPagedResources
 
 	/**
 	 * Implement this to return alist of all the resources that there are to page. Sort them as appropriate.
 	 */
-	protected List readAllResources(SessionState state)
+     // TODO:  Refactor this so it work when the message count is small
+	protected List DONTreadAllResources(SessionState state)
 	{
+        /*
+        Integer iState = (Integer) state.getAttribute(STATE_PAGESIZE);
+        System.out.println("MailAction readAllResources p="+iState);
+        int pageSize = 20;
+        if ( iState != null ) pageSize = iState.intValue();
+        */
+        System.out.println("MailAction readAllResources");
+        int pageSize = ((Integer) state.getAttribute(STATE_PAGESIZE)).intValue();
+        System.out.println("PageSize = "+pageSize);
+        // return readPagedResources(state,1,pageSize+1);
+        
+        return readPagedResources(state,1,99999);
+  /*
 		// read all channel messages
 		List allMessages = null;
 		try
@@ -331,7 +364,7 @@ System.out.println("first="+first+" last="+last);
 		}
 
 		return allMessages;
-
+*/
 	} // readAllResources
 
 	/**
@@ -402,7 +435,7 @@ System.out.println("first="+first+" last="+last);
 
 		context.put(Menu.CONTEXT_ACTION, state.getAttribute(STATE_ACTION));
                 String search = (String) state.getAttribute(STATE_SEARCH);
-System.out.println("search = " + search);
+System.out.println("building Main panel context search = " + search);
 
 		if ("list".equals(mode))
 		{
@@ -462,7 +495,9 @@ e.printStackTrace();
 		// prepare the sort of messages
 		context.put("tlang", rb);
 		prepPage(state);
-
+        
+        System.out.println("FIX ViewModeContext");
+/*
 		List messages = (List) state.getAttribute(STATE_ALL_MESSAGES);
 		int pos = ((Integer) state.getAttribute(STATE_VIEW_ID)).intValue();
 		message = (MailArchiveMessage) messages.get(pos);
@@ -471,7 +506,7 @@ e.printStackTrace();
 		// make sure STATE_MSG_VIEW_ID is updated so that Confirm mode will have access to the correct message id
 		state.setAttribute(STATE_MSG_VIEW_ID, message.getId());
 		//
-		
+*/		
 
 		boolean goNext = state.getAttribute(STATE_NEXT_EXISTS) != null;
 		boolean goPrev = state.getAttribute(STATE_PREV_EXISTS) != null;
@@ -572,7 +607,8 @@ e.printStackTrace();
 	 */
 	private String buildListModeContext(VelocityPortlet portlet, Context context, RunData rundata, SessionState state)
 	{
-		state.setAttribute(STATE_ALL_MESSAGES, readAllResources(state));
+        // System.out.println("STATE_ALL_MESSAGES - SUCKS!");
+		// state.setAttribute(STATE_ALL_MESSAGES, readAllResources(state));
 
 		// prepare the page of messages
 		context.put("tlang", rb);
@@ -690,6 +726,8 @@ e.printStackTrace();
 		String id = runData.getParameters().getString(VIEW_ID);
 		state.setAttribute(STATE_MSG_VIEW_ID, id);
 
+        // TODO: This Is Broken  This whole aproach SUCKS - and is easily fixed
+        System.out.println("VIEWING A MESSAGE IS BROKEN FOR NOW");
 		int pos = -1;
 		List resources = (List) state.getAttribute(STATE_ALL_MESSAGES);
 		if (resources != null)
