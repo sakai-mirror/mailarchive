@@ -309,21 +309,20 @@ public class DbMailArchiveService extends BaseMailArchiveService
 			return super.getAllResources(channel);
 		}
 
-        public List getMessages(MessageChannel channel,String search, boolean asc, PagingPosition pager)
+		public List getMessages(MessageChannel channel,String search, boolean asc, PagingPosition pager)
 		{
 			return super.getAllResources(channel, null, search, asc, pager);
 		}
         
-        public int countMessages(MessageChannel channel)
-        {
-            return super.countResources(channel);
-        }
+		public int countMessages(MessageChannel channel)
+		{
+			return super.countResources(channel);
+		}
         
-        public int countMessages(MessageChannel channel, String search)
-        {
-            return super.countResources(channel, search);
-        }
-        
+		public int countMessages(MessageChannel channel, String search)
+		{
+			return super.countResources(channel, search);
+		}
         
 		public MessageEdit putMessage(MessageChannel channel, String id)
 		{

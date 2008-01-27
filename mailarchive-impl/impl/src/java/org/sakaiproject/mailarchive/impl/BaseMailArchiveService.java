@@ -928,28 +928,6 @@ public abstract class BaseMailArchiveService extends BaseMessageService implemen
 
 		}
         
-        public List getPagedMessages(String search, boolean asc, PagingPosition pager)
-            throws PermissionException
-        {
-            // System.out.println("m_storage="+m_storage);
-            // System.out.println("Base Mail Archive getPagedMessages search="+search+" asc="+asc);
-            // if ( pager != null ) System.out.println(" pages.first="+pager.getFirst()+", "+pager.getLast());
-
-            List retval =  m_storage.getMessages(this, search, asc, pager);
-            return retval;
-       }
-       
-       public int countMessages()
-       {
-           return m_storage.countMessages(this);
-       }
-       
-       public int countMessages(String search)
-       {
-           return m_storage.countMessages(this, search);
-       }
-    
-
 	} // class BaseMailArchiveChannelEdit
 
 	/**********************************************************************************************************************************************************************************************************************************************************
