@@ -145,7 +145,7 @@ public class MailboxAction extends PagedResourceActionII
 			// TODO: Make Count fast in the DB implementation
       		String search = (String) state.getAttribute(STATE_SEARCH);
             System.out.println("Search = "+search);
-            int cCount = channel.countMessages(search);
+            int cCount = channel.countMessagesSearch(search);
             System.out.println("SizeResources Returns Channel count = "+cCount);
 			return cCount;
 		}
@@ -269,7 +269,7 @@ System.out.println("Search = "+search);
 			PagingPosition pages = new PagingPosition(first, last);
 System.out.println("first="+first+" last="+last);
 			// TODO: This should be called getPagedMessages by Date
-			allMessages = channel.getPagedMessages(search, ascending, pages);
+			allMessages = channel.getMessagesSearch(search, ascending, pages);
 		}
 		catch (PermissionException e)
 		{
