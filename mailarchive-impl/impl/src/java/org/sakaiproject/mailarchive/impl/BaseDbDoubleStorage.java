@@ -55,6 +55,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import org.sakaiproject.javax.PagingPosition;
+import org.sakaiproject.javax.Filter;
 
 import java.lang.System;
 
@@ -769,15 +770,13 @@ public class BaseDbDoubleStorage
     public int countResources(Entity container)
     {
         long startClock = System.currentTimeMillis();
-        		// read With or without a filter
+        // read With or without a filter
 		String sql = doubleStorageSql.getCountSql(m_resourceTableName, m_resourceTableContainerIdField);
 System.out.println("COUNT Sql I="+sql);
 		Object[] fields = new Object[1];
 		fields[0] = container.getReference();
 		List countList = m_sql.dbRead(sql, fields, null);
-        
-        // System.out.println("got="+countList.size());
-        
+          
         if ( countList.isEmpty() ) return 0;
         
         Object obj = countList.get(0);
@@ -786,20 +785,24 @@ System.out.println("COUNT Sql I="+sql);
         String str = (String) obj;
         return Integer.parseInt(str);
     }
-    
+
+    // TODO: Blend search and filter to one parameter after we move to trunk
     /**
      * Count all Resources
      * @param container
 	 *        The container for this resource.
+     * @param filter
+     *        A filter object to accept / reject the searches
      * @param search
      *        Search string
      */
-    public int countResources(Entity container, String search)
+    public int countResources(Entity container, Filter filter, String search)
     {
-                long startClock = System.currentTimeMillis();
-        if ( search == null ) return countResources(container);
+        long startClock = System.currentTimeMillis();
+        if ( search == null && filter == null ) return countResources(container);
                 
-        System.out.println("countResources search="+search);
+        System.out.println("countResources filter="+filter+" search="+search);
+        if ( filter != null ) System.out.println("Filter not supported yet");
 
 		String sql = doubleStorageSql.getSelectXml5Sql(m_resourceTableName, m_resourceTableContainerIdField, null, false);
 System.out.println("Count Search SQL="+sql);
@@ -839,7 +842,6 @@ System.out.println("Count Search SQL="+sql);
         System.out.println("Count/Search Finished count="+count+" time="+difference);
         return count;
     }
-
 
 	/**
 	 * Get all Resources.
@@ -892,7 +894,7 @@ System.out.println("Count Search SQL="+sql);
 		List all = new Vector();
 
 System.out.println("getAllResources e="+container+" f="+filter+" asc="+asc+" search="+search+" pag="+pager);
-
+        
 		// read With or without a filter
 		String sql = doubleStorageSql.getSelectXml5Sql(m_resourceTableName, m_resourceTableContainerIdField, m_resourceTableOrderField, asc);
 System.out.println("Sql I="+sql);

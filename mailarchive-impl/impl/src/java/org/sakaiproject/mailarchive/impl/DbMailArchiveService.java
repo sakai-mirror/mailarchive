@@ -42,7 +42,11 @@ import org.sakaiproject.util.Xml;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+// TODO: Remove this:
+import org.sakaiproject.exception.PermissionException;
+
 import org.sakaiproject.javax.PagingPosition;
+import org.sakaiproject.javax.Filter;
 import org.sakaiproject.util.FormattedText;
 import org.sakaiproject.util.StringUtil;
 import org.sakaiproject.mailarchive.api.MailArchiveMessage;
@@ -198,7 +202,36 @@ public class DbMailArchiveService extends BaseMailArchiveService
 		return new DbStorage(this);
 
 	} // newStorage
+  
+    // TODO: Remove these horrible hacks once we change the Storage API  
+    // These do nothing unless they are overridden in the derived class
+    // In this case it is DbMailArchiveService.java
+    @Override
+    public int countMessagesService(BaseMessageChannelEdit chan) throws PermissionException
+	{
+			System.out.println("DB countMessagesService");
+			return ((DbStorage) m_storage).countMessages(chan);
+	}
 
+		/**
+		 * @inheritDoc
+		 */
+    @Override
+	public int countMessagesSearchService(BaseMessageChannelEdit chan, String search) throws PermissionException
+	{
+			System.out.println("DB countMessagesServiceSearch search="+search);
+			return ((DbStorage) m_storage).countMessagesSearch(chan, search);
+	}
+    
+    @Override
+    public List getMessagesSearchService(BaseMessageChannelEdit chan, String search, boolean asc, PagingPosition pager)
+        throws PermissionException
+	{
+			System.out.println("DB getMessagesSearchService search="+search);
+			return ((DbStorage) m_storage).getMessages(chan, search, asc, pager);
+	}
+    // TODO: End temporary workwround to make this backwards compatible
+    
 	/**********************************************************************************************************************************************************************************************************************************************************
 	 * Storage implementation
 	 *********************************************************************************************************************************************************************************************************************************************************/
@@ -319,9 +352,15 @@ public class DbMailArchiveService extends BaseMailArchiveService
 			return super.countResources(channel);
 		}
         
-		public int countMessages(MessageChannel channel, String search)
+        // TODO: remove countMessagesSearch after we have search filters
+		public int countMessagesSearch(MessageChannel channel, String search)
 		{
-			return super.countResources(channel, search);
+			return super.countResources(channel, null, search);
+		}
+
+        public int countMessages(MessageChannel channel, Filter filter)
+        {
+			return super.countResources(channel, filter, null);
 		}
         
 		public MessageEdit putMessage(MessageChannel channel, String id)

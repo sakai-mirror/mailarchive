@@ -48,6 +48,7 @@ public class DoubleStorageSqlMySql extends DoubleStorageSqlDefault
     // MySql supports the limit operation at the end of the Query so this is pretty easy
     public String addPagingPostion(String sqlIn, int startRec, int endRec)
 	{
-        return sqlIn + " limit "+startRec+","+endRec;
+        int recordCount = (endRec-startRec)+1;       
+        return sqlIn + " limit "+startRec+","+recordCount;
 	}
 }
