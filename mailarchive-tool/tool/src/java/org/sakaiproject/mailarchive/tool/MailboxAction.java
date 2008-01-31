@@ -116,8 +116,14 @@ public class MailboxAction extends PagedResourceActionII
 	private static final String STATE_ALL_MESSAGES = "allMessages";
 
 	private static final String STATE_MSG_VIEW_ID = "msg-id";
-
-	/** paging */
+    
+    /** State to cache the count of messages **/
+    
+	private static final String STATE_COUNT = "state-cached-count";
+    
+	private static final String STATE_COUNT_SEARCH = "state-cached-count-search";    
+	
+    /** paging */
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -138,15 +144,32 @@ public class MailboxAction extends PagedResourceActionII
 	 */
 	protected int sizeResources(SessionState state)
 	{
-        // TODO: Use Session Data as long as Search is Unchanged
+        Integer lastCount = (Integer) state.getAttribute(STATE_COUNT);
+        String countSearch = (String) state.getAttribute(STATE_COUNT_SEARCH);
+        String search = (String) state.getAttribute(STATE_SEARCH);
+System.out.println("Search="+search+" countSearch="+countSearch+" lastCount="+lastCount);
+
+        if ( search == null && countSearch == null && lastCount != null )
+        {
+                System.out.println("Returning cached count");
+                return lastCount.intValue();
+        }
+        if ( countSearch != null && countSearch.equals(search))
+        {
+            System.out.println("Returning cached count");
+            return lastCount.intValue();
+        }
+        
         try
 		{
 			MailArchiveChannel channel = MailArchiveService.getMailArchiveChannel((String) state.getAttribute(STATE_CHANNEL_REF));
-			// TODO: Make Count fast in the DB implementation
-      		String search = (String) state.getAttribute(STATE_SEARCH);
             System.out.println("Search = "+search);
             int cCount = channel.countMessagesSearch(search);
             System.out.println("SizeResources Returns Channel count = "+cCount);
+            
+            lastCount = new Integer(cCount);
+            state.setAttribute(STATE_COUNT, lastCount);
+            state.setAttribute(STATE_COUNT_SEARCH, search);
 			return cCount;
 		}
 		catch (PermissionException e)
