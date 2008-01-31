@@ -144,10 +144,18 @@ public class MailboxAction extends PagedResourceActionII
 	 */
 	protected int sizeResources(SessionState state)
 	{
+
+        String search = (String) state.getAttribute(STATE_SEARCH);
+
+        // We cache the count at the tool level because it is not done perfectly
+        // at the lower layer
+        
+        // TODO: Actually if there is no search, count is pretty cheap - so 
+        // we might not want to cache the count unless we are doing search,
+        // hmmmm.. - Chuck
         Integer lastCount = (Integer) state.getAttribute(STATE_COUNT);
         String countSearch = (String) state.getAttribute(STATE_COUNT_SEARCH);
-        String search = (String) state.getAttribute(STATE_SEARCH);
-System.out.println("Search="+search+" countSearch="+countSearch+" lastCount="+lastCount);
+        System.out.println("Search="+search+" countSearch="+countSearch+" lastCount="+lastCount);
 
         if ( search == null && countSearch == null && lastCount != null )
         {
