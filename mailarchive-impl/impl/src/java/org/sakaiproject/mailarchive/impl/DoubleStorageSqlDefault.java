@@ -77,7 +77,7 @@ public class DoubleStorageSqlDefault implements DoubleStorageSql
     // TODO: Perhaps should deal with the Nulls here
     public String getCountSql(String table, String idField)
     {
-        return "select count (*) from " + table + " where (" + idField + " = ? )";
+        return "select count(*) from " + table + " where (" + idField + " = ? )";
     }
 
 	public String getSelect1Sql(String table, String idField)
