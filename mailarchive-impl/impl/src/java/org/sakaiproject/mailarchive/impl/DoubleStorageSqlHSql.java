@@ -31,16 +31,23 @@ import org.apache.commons.logging.LogFactory;
  */
 public class DoubleStorageSqlHSql extends DoubleStorageSqlDefault
 {
-    // HSQL supports the LIMIT operation - however the LIMIT must be at the beginning
-    // TODO: Make this work by grabbing the SELECT and adding a bit to it
-    @Override
+	@Override
 	public String addLimitToQuery(String sqlIn, int startRec, int endRec)
 	{
-        if ( startRec > endRec ) return null;
-        int position = sqlIn.toLowerCase().indexOf("select ");
-        if ( position < 0 ) return null;
-        int recordCount = (endRec-startRec)+1;
-        String retval = "select limit "+startRec+" "+recordCount+" "+sqlIn.substring(position+7);
-        return retval;
+		if ( startRec > endRec ) return null;
+		int position = sqlIn.toLowerCase().indexOf("select ");
+		if ( position < 0 ) return null;
+		int recordCount = (endRec-startRec)+1;
+		String retval = "select limit "+startRec+" "+recordCount+" "+sqlIn.substring(position+7);
+		return retval;
+	}
+
+	@Override
+	public String addTopToQuery(String sqlIn, int endRec)
+	{
+		int position = sqlIn.toLowerCase().indexOf("select ");
+		if ( position < 0 ) return null;
+		String retval = "select top "+endRec+" " + sqlIn.substring(position+7);
+		return retval;
 	}
 }

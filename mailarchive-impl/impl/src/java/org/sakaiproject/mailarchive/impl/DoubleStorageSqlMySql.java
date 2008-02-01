@@ -45,10 +45,12 @@ public class DoubleStorageSqlMySql extends DoubleStorageSqlDefault
 		return recordId.hashCode() + " - " + recordId;
 	}
     
-    // MySql supports the limit operation at the end of the Query so this is pretty easy
-    public String addPagingPostion(String sqlIn, int startRec, int endRec)
+	// MySql supports the limit operation at the end of the Query so this is pretty easy
+	@Override
+        public String addLimitToQuery(String sqlIn, int startRec, int endRec)
 	{
-        int recordCount = (endRec-startRec)+1;       
-        return sqlIn + " limit "+startRec+","+recordCount;
+		int recordCount = (endRec-startRec)+1;       
+		return sqlIn + " limit "+startRec+","+recordCount;
 	}
+
 }

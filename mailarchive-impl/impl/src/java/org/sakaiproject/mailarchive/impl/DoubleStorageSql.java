@@ -70,8 +70,8 @@ public interface DoubleStorageSql
 
 	public String getUpdate2Sql(String table, String idField1, String idField2, String fieldList);
 
-    public String addLimitToQuery(String inSql, int startRec, int endRec);
+	public String addLimitToQuery(String inSql, int startRec, int endRec);
 
-    public String addTopToQuery(String inSql, int endRec);
+	public String addTopToQuery(String inSql, int endRec);
         
 }

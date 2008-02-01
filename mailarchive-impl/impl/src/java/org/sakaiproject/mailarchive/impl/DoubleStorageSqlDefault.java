@@ -144,22 +144,13 @@ public class DoubleStorageSqlDefault implements DoubleStorageSql
 		return "update " + table + " set " + fieldList + " XML = ? where (" + idField2 + " = ? ) and ( " + idField1 + " = ? )";
 	}
 
-    // Note - if we return null here - the code above will do paging in software by
-    // looping through the recordset
-    // We return null in default because LIMIT is not uniformly suported
-    // startRec and endRec are zero based
 	public String addLimitToQuery(String sqlIn, int startRec, int endRec)
 	{
-        return null;
+        	return null;
 	}
     
-    // If we return null here - the code will ignore the records in software
-    // TODO: Do this in the default because TOP is pretty universal
-    public String addTopToQuery(String sqlIn, int endRec)
+	public String addTopToQuery(String sqlIn, int endRec)
 	{
-        int position = sqlIn.toLowerCase().indexOf("select ");
-        if ( position < 0 ) return null;
-        String retval = "select top "+endRec+" " + sqlIn.substring(position+7);
-        return retval;
+		return null;
 	}
 }

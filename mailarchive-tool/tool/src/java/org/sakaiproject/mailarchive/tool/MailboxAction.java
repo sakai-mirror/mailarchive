@@ -132,6 +132,8 @@ public class MailboxAction extends PagedResourceActionII
 	protected List readResourcesPage(SessionState state, int first, int last)
 	{
 
+System.out.println("read resources page");
+
 		List rv = readPagedResources(state, first, last);
 
 		return rv;
@@ -301,6 +303,7 @@ System.out.println("Search = "+search);
 System.out.println("first="+first+" last="+last);
 			// TODO: This should be called getPagedMessages by Date
 			allMessages = channel.getMessagesSearch(search, ascending, pages);
+System.out.println("Back from getMessagesSearch size="+allMessages.size());
 		}
 		catch (PermissionException e)
 		{
@@ -331,7 +334,7 @@ System.out.println("first="+first+" last="+last);
 	 * Implement this to return alist of all the resources that there are to page. Sort them as appropriate.
 	 */
      // TODO:  Refactor this so it work when the message count is small
-	protected List DONTreadAllResources(SessionState state)
+	protected List readAllResources(SessionState state)
 	{
         /*
         Integer iState = (Integer) state.getAttribute(STATE_PAGESIZE);

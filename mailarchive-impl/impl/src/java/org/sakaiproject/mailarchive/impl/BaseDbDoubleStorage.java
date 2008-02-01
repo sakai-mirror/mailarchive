@@ -852,7 +852,7 @@ System.out.println("Count Search SQL="+sql);
 	 */
 	public List getAllResources(Entity container)
 	{
-        return getAllResources(container, null, null, true, null);
+		return getAllResources(container, null, null, true, null);
 	}
 
 	/**
@@ -869,23 +869,23 @@ System.out.println("Count Search SQL="+sql);
 		return getAllResources(container, filter, null, true, null);
 	}
     
-    /**
+	/**
 	 * Get all Resources.
 	 * 
 	 * @param container
 	 *        The container for this resource.
-     * @param filter
+	 * @param filter
 	 *        an optional conditional for select statement
-     * @param asc
+	 * @param asc
 	 *        true means ascending
-     * @param search
+	 * @param search
 	 *        an optional search.  I search is specified, we do 
-     *        paging in software instead of the database because
-     *        text is encoded in the XML.
-     * @param filter
+	 *        paging in software instead of the database because
+	 *        text is encoded in the XML.
+	 * @param filter
 	 *        an optional conditional for select statement
-     * @param pager
-     *        an optional range of elements to return inclusive
+	 * @param pager
+	 *        an optional range of elements to return inclusive
 	 * @return The list (Resource) of all Resources.
 	 */
 	public List getAllResources(Entity container, String filter, String search, boolean asc, PagingPosition pager)
