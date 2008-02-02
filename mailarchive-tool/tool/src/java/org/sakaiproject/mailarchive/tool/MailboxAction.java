@@ -317,7 +317,7 @@ public class MailboxAction extends PagedResourceActionII
 
 		// If we are sorted by date, or our message corpus is too large
 		// we use the database to do the hard work
-		int MESSAGE_THRESHOLD = 10;
+		int MESSAGE_THRESHOLD = 100;
 		// if ( resourceCount > MESSAGE_THRESHOLD || (sort == SORT_DATE) )
 		if ( resourceCount > MESSAGE_THRESHOLD )
 		{
@@ -390,77 +390,6 @@ public class MailboxAction extends PagedResourceActionII
 	} // readPagedResources
 
 	/**
-	 * Implement this to return alist of all the resources that there are to page. Sort them as appropriate.
-	 */
-     // TODO:  Refactor this so it work when the message count is small
-	protected List readAllResources(SessionState state)
-	{
-        /*
-        Integer iState = (Integer) state.getAttribute(STATE_PAGESIZE);
-        System.out.println("MailAction readAllResources p="+iState);
-        int pageSize = 20;
-        if ( iState != null ) pageSize = iState.intValue();
-        */
-        System.out.println("MailAction readAllResources");
-        int pageSize = ((Integer) state.getAttribute(STATE_PAGESIZE)).intValue();
-        System.out.println("PageSize = "+pageSize);
-        // return readPagedResources(state,1,pageSize+1);
-        
-        return readPagedResources(state,1,99999);
-  /*
-		// read all channel messages
-		List allMessages = null;
-		try
-		{
-			MailArchiveChannel channel = MailArchiveService.getMailArchiveChannel((String) state.getAttribute(STATE_CHANNEL_REF));
-
-			// TODO: This needs to be paged !!!!
-			allMessages = channel.getMessages(null, true);
-		}
-		catch (PermissionException e)
-		{
-		}
-		catch (IdUnusedException e)
-		{
-		}
-
-		// deal with no messages
-		if (allMessages == null) return new Vector();
-
-		String search = (String) state.getAttribute(STATE_SEARCH);
-
-		// filter if searching
-		if (search != null)
-		{
-			Vector filtered = new Vector();
-			for (Iterator iMsgs = allMessages.iterator(); iMsgs.hasNext();)
-			{
-				MailArchiveMessage msg = (MailArchiveMessage) iMsgs.next();
-
-				if (StringUtil.containsIgnoreCase(msg.getMailArchiveHeader().getSubject(), search)
-						|| StringUtil.containsIgnoreCase(msg.getMailArchiveHeader().getFromAddress(), search)
-						|| StringUtil.containsIgnoreCase(FormattedText.convertFormattedTextToPlaintext(msg.getBody()), search))
-				{
-					filtered.add(msg);
-				}
-			}
-
-			allMessages = filtered;
-		}
-
-		// if other than ascending date, sort them all
-		boolean ascending = ((Boolean) state.getAttribute(STATE_ASCENDING)).booleanValue();
-		int sort = ((Integer) state.getAttribute(STATE_SORT)).intValue();
-		if ((allMessages.size() > 1) && ((!ascending) || (sort != SORT_DATE)))
-		{
-			Collections.sort(allMessages, new MyComparator(sort, ascending));
-		}
-
-		return allMessages;
-*/
-	} // readAllResources
-
-	/**
 	 * Populate the state object, if needed.
 	 */
 	protected void initState(SessionState state, VelocityPortlet portlet, JetspeedRunData rundata)
@@ -498,21 +427,6 @@ public class MailboxAction extends PagedResourceActionII
 				state.setAttribute(STATE_VIEW_HEADERS, new Boolean(false));
 			}
 
-			// // setup the observer to notify our main panel
-			// if (state.getAttribute(STATE_OBSERVER) == null)
-			// {
-			// // the delivery location for this tool
-			// String deliveryId = clientWindowId(state, portlet.getID());
-			//				
-			// // the html element to update on delivery
-			// String elementId = mainPanelUpdateId(portlet.getID());
-			//				
-			// // the event resource reference pattern to watch for
-			// Reference r = EntityManager.newReference(channel);
-			// String pattern = MailArchiveService.messageReference(r.getContext(), r.getId(), "");
-			//
-			// state.setAttribute(STATE_OBSERVER, new EventObservingCourier(deliveryId, elementId, pattern));
-			// }
 		}
 
 	} // initState
@@ -527,8 +441,8 @@ public class MailboxAction extends PagedResourceActionII
 		String mode = (String) state.getAttribute(STATE_MODE);
 
 		context.put(Menu.CONTEXT_ACTION, state.getAttribute(STATE_ACTION));
-                String search = (String) state.getAttribute(STATE_SEARCH);
-System.out.println("building Main panel context search = " + search);
+		String search = (String) state.getAttribute(STATE_SEARCH);
+		System.out.println("building Main panel context search = " + search);
 
 		if ("list".equals(mode))
 		{
@@ -545,23 +459,27 @@ System.out.println("building Main panel context search = " + search);
 			return buildViewModeContext(portlet, context, rundata, state);
 		}
 
-		else if (MODE_OPTIONS.equals(mode))
-		{
-// A bad hack to fill up a mailbox quickly to test paging.
-System.out.println("HACKING!!!!");
-try {
-			MailArchiveChannel channel = MailArchiveService.getMailArchiveChannel((String) state.getAttribute(STATE_CHANNEL_REF));
-System.out.println("channel = " + channel);
+		else if (MODE_OPTIONS.equals(mode)) {
+			// A bad hack to fill up a mailbox quickly to test paging.
+			System.out.println("HACKING!!!!");
+			try {
+				MailArchiveChannel channel = MailArchiveService
+						.getMailArchiveChannel((String) state
+								.getAttribute(STATE_CHANNEL_REF));
+				System.out.println("channel = " + channel);
 
-    List mailHeaders = new Vector();
-		for ( int i=1; i< 5; i++ ) {
-    channel.addMailArchiveMessage("Subject "+TimeService.newTime(), "from "+TimeService.newTime(), TimeService.newTime(), mailHeaders, null, "Body "+TimeService.newTime());
-			Thread.sleep(2);
-		}
-} catch (Exception e ) {
-System.out.println("BOLLOX");
-e.printStackTrace();
-}
+				List mailHeaders = new Vector();
+				for (int i = 1; i < 5; i++) {
+					channel.addMailArchiveMessage("Subject "
+							+ TimeService.newTime(), "from "
+							+ TimeService.newTime(), TimeService.newTime(),
+							mailHeaders, null, "Body " + TimeService.newTime());
+					Thread.sleep(2);
+				}
+			} catch (Exception e) {
+				System.out.println("BOLLOX");
+				e.printStackTrace();
+			}
 			return buildOptionsPanelContext(portlet, context, rundata, state);
 		}
 
@@ -653,16 +571,6 @@ e.printStackTrace();
 
 	} // buildViewModeContext
 
-	/*
-	 * 
-	 */
-	/*
-	 * private MailArchiveMessage adjustPaging(Context context, SessionState state) { MailArchiveMessage message = null; List messages = (List) state.getAttribute(STATE_ALL_MESSAGES); int pos = ((Integer) state.getAttribute(STATE_VIEW_ID)).intValue();
-	 * boolean goNext = state.getAttribute(STATE_GO_NEXT) != null; boolean goPrev = state.getAttribute(STATE_GO_PREV) != null; state.removeAttribute(STATE_GO_NEXT); state.removeAttribute(STATE_GO_PREV); if (goNext || goPrev) { if (goNext) { if (pos <
-	 * messages.size()-1) { pos++; } } if (goPrev) { if (pos > 0) { pos--; } } } if (pos == -1) { pos = 0; } if (pos >= messages.size()) { pos = messages.size() -1; } message = (MailArchiveMessage) messages.get(pos); //get the message id if (pos > 0) {
-	 * context.put("goPPButton", Boolean.TRUE); } else { context.put("goPPButton", Boolean.FALSE); } if (pos < sizeResources(state)-1) { context.put("goNPButton", Boolean.TRUE); } else { context.put("goNPButton", Boolean.FALSE); } return message; }
-	 */
-
 	/**
 	 * Build the context for the confirm remove mode (in the Main panel).
 	 */
@@ -700,8 +608,6 @@ e.printStackTrace();
 	 */
 	private String buildListModeContext(VelocityPortlet portlet, Context context, RunData rundata, SessionState state)
 	{
-        // System.out.println("STATE_ALL_MESSAGES - SUCKS!");
-		// state.setAttribute(STATE_ALL_MESSAGES, readAllResources(state));
 
 		// prepare the page of messages
 		context.put("tlang", rb);
@@ -737,11 +643,6 @@ e.printStackTrace();
 
 		// output the search field
 		context.put(STATE_SEARCH, state.getAttribute(STATE_SEARCH));
-
-		// if (state.getAttribute(STATE_NUM_MESSAGES) != null)
-		// {
-		// context.put("num-messages", state.getAttribute(STATE_NUM_MESSAGES));
-		// }
 
 		// eventSubmit value and id field for drill down
 		context.put("view-id", VIEW_ID);
@@ -819,7 +720,7 @@ e.printStackTrace();
 		String id = runData.getParameters().getString(VIEW_ID);
 		state.setAttribute(STATE_MSG_VIEW_ID, id);
 
-        // TODO: This Is Broken  This whole aproach SUCKS - and is easily fixed
+        // TODO: This Is Broken  This whole approach SUCKS - and is easily fixed
         System.out.println("VIEWING A MESSAGE IS BROKEN FOR NOW");
 		int pos = -1;
 		List resources = (List) state.getAttribute(STATE_ALL_MESSAGES);
