@@ -42,6 +42,8 @@ import org.sakaiproject.util.Xml;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import org.sakaiproject.util.commonscodec.CommonsCodecBase64;
+
 // TODO: Remove this:
 import org.sakaiproject.exception.PermissionException;
 
@@ -230,7 +232,7 @@ public class DbMailArchiveService extends BaseMailArchiveService
 			System.out.println("DB getMessagesSearchService search="+search);
 			return ((DbStorage) m_storage).getMessages(chan, search, asc, pager);
 	}
-    // TODO: End temporary workwround to make this backwards compatible
+    // TODO: End temporary workaround to make this backwards compatible
     
 	/**********************************************************************************************************************************************************************************************************************************************************
 	 * Storage implementation
@@ -251,18 +253,73 @@ public class DbMailArchiveService extends BaseMailArchiveService
 
 		} // DbStorage
         
-        // A call back to match before the XML is parsed and turned into a Resource
-        // If we can decide here - it is more efficient that sending the XML through SAX
-        // But for now - we wil do SAX - at least SAX does not waste too much memory
-        // App server CPU is not the most critical resource.  So we return "I don't know"
-        @Override
-        public int matchXml(String theXml, String search)
-        {
-            return 0;  // Neither yes (1) or no(-1)
-        }
+        // A call back to match before the XML is parsed and turned into a
+		// Resource
+		// If we can decide here - it is more efficient that sending the XML
+		// through SAX
+		// But for now - we will do SAX - at least SAX does not waste too much
+		// memory
+		// App server CPU is not the most critical resource. So we return "I
+		// don't know"
+		@Override
+		public int matchXml(String xml, String search) {
+			// System.out.println("DBMailArchiveService search=" + search + " xml=\n" + xml);
+
+			// String matcher = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+			// System.out.println(matcher);
+			if (!xml.startsWith("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"))
+				return 0;
+
+			/*
+			 * <?xml version="1.0" encoding="UTF-8"?> <message
+			 * body="Qm9keSAyMDA4MDEyNzIwMTM0MTkzMw=="
+			 * body-html="Qm9keSAyMDA4MDEyNzIwMTM0MTkzMw=="> <header
+			 * access="channel" date="20080127201341934" from="admin"
+			 * id="d978685c-8730-4975-b3ea-55fdf03e0e5a"
+			 * mail-date="20080127201341933" mail-from="from 20080127201341933"
+			 * subject="Subject 20080127201341933"/><properties/></message>
+			 */
+			String body = getXmlAttr(xml, "body");
+			String from = getXmlAttr(xml, "from");
+			String subject = getXmlAttr(xml, "subject");
+			// System.out.println("body=" + body);
+			// System.out.println("from=" + from + " subject=" + subject);
+			if (body == null || from == null || subject == null)
+				return 0;
+
+			try {
+				byte[] decoded = CommonsCodecBase64.decodeBase64(body.getBytes("UTF-8"));
+				body = new String(decoded, "UTF-8");
+				// System.out.println("new body=" + body);
+			} catch (Exception e) {
+				return 0;
+			}
+
+			if (StringUtil.containsIgnoreCase(subject, search)
+					|| StringUtil.containsIgnoreCase(from, search)
+					|| StringUtil.containsIgnoreCase(body, search)) {
+				// System.out.println("YAYAYAYAYAY");
+				return 1;
+			}
+			return -1;
+		}
+
+	    String getXmlAttr(String xml, String tagName)
+	    {
+	    	String lookfor = tagName+"=\""; 
+	    	int ipos = xml.indexOf(lookfor);
+	    	// System.out.println("tag = "+tagName+" ipos="+ipos);
+	    	if ( ipos < 1 ) return null;
+	    	ipos = ipos + lookfor.length();
+	    	// System.out.println("ipos = "+ipos);
+	    	int jpos = xml.indexOf("\"",ipos);
+	    	// System.out.println("pos = "+jpos);
+	    	if ( jpos < 1 || ipos > jpos ) return null;
+	    	return xml.substring(ipos,jpos);
+	    }
         
         // A call back to allow us to do our own search decisions after
-        // an mesage has been parsed and converted to a resource
+        // an message has been parsed and converted to a resource
         @Override
         public boolean matchEntity(Entity entry, String search)
         {
