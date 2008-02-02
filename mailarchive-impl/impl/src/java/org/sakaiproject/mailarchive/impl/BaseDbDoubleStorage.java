@@ -912,6 +912,34 @@ System.out.println("COUNT Sql I="+sql);
 		// If we are paged in SQL - then do not pass in the pager
 		all = m_sql.dbRead(sql, fields, new SearchFilterReader(container, search,  pagedInSql ? null : pager, false));
 
+		// TODO: Remove this step when we are sure that we are working with
+		// the new DBService - since our reader returns "this" to indicate
+		// when to stop - and the old DBService will just hand this pack to us
+		// we need to post process the list to be sure - should only be
+		// in the order of 100 elements since this is already a post-paged
+		// list
+		if ( pager != null )
+		{
+			int count = (pager.getLast() - pager.getFirst() ) + 1;
+			int endPos = -1;
+			for ( int i = 0; i < all.size(); i ++ )
+			{
+				Object obj = all.get(i);
+				if ( obj instanceof SqlReader )
+				{
+					System.out.println("Found an SqlReader in the post-process loop");
+					endPos = i;
+					break;
+				}
+			}
+			
+			if ( endPos > 0 )
+			{
+				System.out.println("Truncating to "+endPos);
+		        all = all.subList(0, endPos);
+			}			
+		}
+		
         long difference = System.currentTimeMillis() - startClock;
         System.out.println("getAllResources count="+all.size()+" time="+difference);
 		return all;
@@ -919,7 +947,7 @@ System.out.println("COUNT Sql I="+sql);
     
     // This really does not need to be overridden unless someone
     // Wants to do some type of pre-parse searching or reduction
-	// -1 indicates - definate "no"
+	// -1 indicates - definite "no"
 	// 0 indicates - maybe - continue and parse the Xml
 	// 1 indicates - "yes" - we know in this rouinte this is a match
     public int matchXml(String xml, String search)
@@ -967,7 +995,7 @@ System.out.println("COUNT Sql I="+sql);
 				// System.out.println("YO "+theXml.length());
 
 				// TODO: It would be nice to tell our caller that we are finished
-                if ( m_pager != null && count > m_pager.getLast() ) return null;
+                if ( m_pager != null && count > m_pager.getLast() ) return this;
 				
                 int iTest = 0;  // Don't know if we have a match
                 if ( m_search != null )
@@ -995,7 +1023,7 @@ System.out.println("COUNT Sql I="+sql);
                 if ( m_pager != null && count < m_pager.getFirst() ) return null;
                 
                 // If we could indicate "finished" - we would do so below
-                if ( m_pager != null && count > m_pager.getLast() ) return null;
+                if ( m_pager != null && count > m_pager.getLast() ) return this;
                 
                 if ( m_doCount ) return intValue;
                 return entry;
