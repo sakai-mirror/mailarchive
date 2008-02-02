@@ -805,39 +805,12 @@ System.out.println("COUNT Sql I="+sql);
         if ( filter != null ) System.out.println("Filter not supported yet");
 
 		String sql = doubleStorageSql.getSelectXml5Sql(m_resourceTableName, m_resourceTableContainerIdField, null, false);
-System.out.println("Count Search SQL="+sql);
+        System.out.println("Count Search SQL="+sql);
 		Object[] fields = new Object[1];
 		fields[0] = container.getReference();
-		List xml = m_sql.dbRead(sql, fields, null);
-        
-        // TODO:  Loop through and search
-        System.out.println("got="+xml.size());
-        int count = 0;
-        for (int i = 0; i < xml.size(); i++)
-        {
-            String theXml = (String) xml.get(i);
-            int iTest = 0;  // Don't know if we have a match
-            if ( search != null )
-            {
-                // System.out.println("XML="+theXml);
-                iTest = matchXml(theXml, search);
-            }
-                
-            // If it is clearly rejected
-            if ( iTest == -1 ) continue;
-                
-            // If it is known to be accepted (1) or unsure (0), 
-            // parse the Xml and continue
-            Entity entry = readResource(container, (String) xml.get(i));
-            if ( entry == null ) continue;
-                    
-            // If there is no indication from matchXml
-            if ( iTest == 0 && search != null)
-            {
-                if ( ! matchEntity(entry, search) ) continue;
-            }
-            count++;
-        }
+		List all = m_sql.dbRead(sql, fields, new SearchFilterReader(container, search,  null, true));
+		int count = all.size();
+
         long difference = System.currentTimeMillis() - startClock;
         System.out.println("Count/Search Finished count="+count+" time="+difference);
         return count;
@@ -890,20 +863,20 @@ System.out.println("Count Search SQL="+sql);
 	 */
 	public List getAllResources(Entity container, String filter, String search, boolean asc, PagingPosition pager)
 	{
-                long startClock = System.currentTimeMillis();
+		long startClock = System.currentTimeMillis();
 		List all = new Vector();
 
-System.out.println("getAllResources e="+container+" f="+filter+" asc="+asc+" search="+search+" pag="+pager);
+		System.out.println("getAllResources e="+container+" f="+filter+" asc="+asc+" search="+search+" pag="+pager);
         
 		// read With or without a filter
 		String sql = doubleStorageSql.getSelectXml5Sql(m_resourceTableName, m_resourceTableContainerIdField, m_resourceTableOrderField, asc);
-System.out.println("Sql I="+sql);
+		System.out.println("Sql I="+sql);
         if ( filter != null ) 
         {
             sql = doubleStorageSql.getSelectXml5filterSql(m_resourceTableName, m_resourceTableContainerIdField, m_resourceTableOrderField, asc, filter);
 		}
         
-System.out.println("Sql II="+sql);    
+        // System.out.println("Sql II="+sql);    
 
         // If we are not doing a search and we have a record range
         // see if we can use SQL to limit the range - if our database 
@@ -935,83 +908,22 @@ System.out.println("Sql II="+sql);
         
 		Object[] fields = new Object[1];
 		fields[0] = container.getReference();
-		List xml = m_sql.dbRead(sql, fields, null);
-        System.out.println("Recordset size="+xml.size()+" time="+(System.currentTimeMillis() - startClock));
 
-		// Nothing returned - nothing to return
-		if (xml.isEmpty()) return all;
+		// If we are paged in SQL - then do not pass in the pager
+		all = m_sql.dbRead(sql, fields, new SearchFilterReader(container, search,  pagedInSql ? null : pager, false));
 
-        // If we have a search - we must go through the record set,
-        // searching first and then applying the pager range on the
-        // records that match the search.  This could take a while.
-        if ( search != null ) 
-        {
-            System.out.println("SEARCHING the record set.....");
-            int count = 0;
-            for (int i = 0; i < xml.size(); i++)
-            {
-                String theXml = (String) xml.get(i);
-                int iTest = 0;  // Don't know if we have a match
-                if ( search != null )
-                {
-                      // System.out.println("XML="+theXml);
-                      iTest = matchXml(theXml, search);
-                }
-                
-                // If it is clearly rejected
-                if ( iTest == -1 ) continue;
-                
-                // If it is known to be accepted (1) or unsure (0), 
-                // parse the Xml and continue
-                Entity entry = readResource(container, (String) xml.get(i));
-                if ( entry == null ) continue;
-                    
-                // If there is no indication from matchXml
-                if ( iTest == 0 && search != null)
-                {
-                    if ( ! matchEntity(entry, search) ) continue;
-                }
-                count++;
-                if ( count < pager.getFirst() ) continue;
-                if ( count > pager.getLast() ) break;
-                all.add(entry);
-            }
-        }
-        // If we have no search, and have a pager, and we could not do the 
-        // paging in SQL, we loop through the result set and pull out the
-        // requested subset using the pager as a range onthe loop.  Touch 
-        // no more data than necessary.
-        else if ( search == null && pager != null && !pagedInSql )
-        {
-            System.out.println("MANUALLY PAGING the record set.....");
-            for (int i = pager.getFirst()-1; i >= 0 && i < xml.size() && i < pager.getLast() ; i++)
-            {
-                Entity entry = readResource(container, (String) xml.get(i));
-                if (entry != null) all.add(entry);
-            }
-        }
-        // We get here with no search and either (a) no pager or
-        // (b) paging was done in SQL - viola - we parse and 
-        // return the whole record set
-        else
-        {
-            System.out.println("RETURNING THE WHOLE record set.....");
-            for (int i = 0; i < xml.size(); i++)
-            {
-                Entity entry = readResource(container, (String) xml.get(i));
-                if (entry != null) all.add(entry);
-            }
-        }
-         long difference = System.currentTimeMillis() - startClock;
+        long difference = System.currentTimeMillis() - startClock;
         System.out.println("getAllResources count="+all.size()+" time="+difference);
 		return all;
 	}
     
     // This really does not need to be overridden unless someone
-    // Wants to do some type of pre parse serching
+    // Wants to do some type of pre-parse searching or reduction
+	// -1 indicates - definate "no"
+	// 0 indicates - maybe - continue and parse the Xml
+	// 1 indicates - "yes" - we know in this rouinte this is a match
     public int matchXml(String xml, String search)
     {
-        // System.out.println("BASE DB MATCHING XML!!!! "+search);
         return 0;
     }
     
@@ -1022,6 +934,79 @@ System.out.println("Sql II="+sql);
         System.out.println("BASE DB MATCHING Entity!!!! "+search+" ent="+entry);
         return false;
     }
+    
+    public class SearchFilterReader implements SqlReader
+    {
+    	private String m_search;
+    	private PagingPosition m_pager;
+    	private Entity m_container;
+    	private boolean m_doCount = false;
+    	
+    	private int count = 0;
+    	private int processCount = 0;
+    	
+    	// If we are only counting - return a tiny thing - not a big thing
+    	private final Integer intValue = 1;
+    	
+    	public SearchFilterReader(Entity container, String search, PagingPosition pager, boolean doCount)
+    	{
+    		m_container = container;
+    		m_search = search;
+    		m_pager = pager;
+    		m_doCount = doCount;
+    	}
+    	
+		public Object readSqlResultRecord(ResultSet result)
+		{
+			processCount++;
+			try
+			{
+				// System.out.println("search="+m_search+" pager="+m_pager+" process="+processCount);
+				// Pull out the XML
+				String theXml = result.getString(1);
+				// System.out.println("YO "+theXml.length());
+
+				// TODO: It would be nice to tell our caller that we are finished
+                if ( m_pager != null && count > m_pager.getLast() ) return null;
+				
+                int iTest = 0;  // Don't know if we have a match
+                if ( m_search != null )
+                {
+                      // System.out.println("XML="+theXml);
+                      iTest = matchXml(theXml, m_search);
+                }
+                
+                // If it is clearly rejected
+                if ( iTest == -1 ) return null;
+                
+                if ( iTest == 1 && m_doCount ) return intValue;
+                
+                // If it is known to be accepted (1) or unsure (0), 
+                // parse the Xml and continue
+                Entity entry = readResource(m_container, theXml);
+                if ( entry == null ) return null;
+                    
+                // If there is no indication from matchXml
+                if ( iTest == 0 && m_search != null)
+                {
+                    if ( ! matchEntity(entry, m_search) ) return null;
+                }
+                count++;
+                if ( m_pager != null && count < m_pager.getFirst() ) return null;
+                
+                // If we could indicate "finished" - we would do so below
+                if ( m_pager != null && count > m_pager.getLast() ) return null;
+                
+                if ( m_doCount ) return intValue;
+                return entry;
+
+			}
+			catch (SQLException ignore)
+			{
+				return null;
+			}
+		}
+     }
 
 	/**
 	 * Add a new Resource with this id.

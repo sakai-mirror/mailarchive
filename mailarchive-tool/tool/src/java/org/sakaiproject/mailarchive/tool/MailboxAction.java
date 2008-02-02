@@ -115,6 +115,8 @@ public class MailboxAction extends PagedResourceActionII
 	/** paging */
 	private static final String STATE_ALL_MESSAGES = "allMessages";
 
+	private static final String STATE_ALL_MESSAGES_SEARCH = "allMessages-search";
+	
 	private static final String STATE_MSG_VIEW_ID = "msg-id";
     
     /** State to cache the count of messages **/
@@ -132,7 +134,7 @@ public class MailboxAction extends PagedResourceActionII
 	protected List readResourcesPage(SessionState state, int first, int last)
 	{
 
-System.out.println("read resources page");
+		System.out.println("read resources page");
 
 		List rv = readPagedResources(state, first, last);
 
@@ -151,10 +153,6 @@ System.out.println("read resources page");
 
         // We cache the count at the tool level because it is not done perfectly
         // at the lower layer
-        
-        // TODO: Actually if there is no search, count is pretty cheap - so 
-        // we might not want to cache the count unless we are doing search,
-        // hmmmm.. - Chuck
         Integer lastCount = (Integer) state.getAttribute(STATE_COUNT);
         String countSearch = (String) state.getAttribute(STATE_COUNT_SEARCH);
         System.out.println("Search="+search+" countSearch="+countSearch+" lastCount="+lastCount);
@@ -169,7 +167,25 @@ System.out.println("read resources page");
             System.out.println("Returning cached count");
             return lastCount.intValue();
         }
-        
+
+        // Check to see if we have put all the messages in state because this
+        // is a short corpus
+		List allMessages = (List) state.getAttribute(STATE_ALL_MESSAGES);
+		String messagesSearch = (String) state.getAttribute(STATE_ALL_MESSAGES_SEARCH);
+		boolean match = (search == null && messagesSearch == null);
+        if ( search != null && search.equals(messagesSearch) )
+        {
+        	match = true;
+        }
+  
+		// If we have some messages stored in state and the search matches, we know
+        // the size of the messages.
+		if ( allMessages != null && match )
+		{
+			return allMessages.size();
+		}
+	
+		// We must talk to the Storage to count the messages
         try
 		{
 			MailArchiveChannel channel = MailArchiveService.getMailArchiveChannel((String) state.getAttribute(STATE_CHANNEL_REF));
@@ -291,43 +307,86 @@ System.out.println("read resources page");
 		// read all channel messages
 		List allMessages = null;
 		boolean ascending = ((Boolean) state.getAttribute(STATE_ASCENDING)).booleanValue();
-		int sort = ((Integer) state.getAttribute(STATE_SORT)).intValue();
-System.out.println("Sort ="+ sort);
+		int sort = ((Integer) state.getAttribute(STATE_SORT)).intValue();		
+		String search = (String) state.getAttribute(STATE_SEARCH);
+		PagingPosition pages = new PagingPosition(first, last);
+		System.out.println("readPagedResources Sort ="+ sort+" search = "+search+" first="+first+" last="+last);
+		
+		int resourceCount = sizeResources(state);
+		System.out.println("resourceCount = "+resourceCount);
 
-		try
+		// If we are sorted by date, or our message corpus is too large
+		// we use the database to do the hard work
+		int MESSAGE_THRESHOLD = 10;
+		// if ( resourceCount > MESSAGE_THRESHOLD || (sort == SORT_DATE) )
+		if ( resourceCount > MESSAGE_THRESHOLD )
 		{
-			MailArchiveChannel channel = MailArchiveService.getMailArchiveChannel((String) state.getAttribute(STATE_CHANNEL_REF));
-			String search = (String) state.getAttribute(STATE_SEARCH);
-System.out.println("Search = "+search);
-			PagingPosition pages = new PagingPosition(first, last);
-System.out.println("first="+first+" last="+last);
-			// TODO: This should be called getPagedMessages by Date
-			allMessages = channel.getMessagesSearch(search, ascending, pages);
-System.out.println("Back from getMessagesSearch size="+allMessages.size());
-		}
-		catch (PermissionException e)
-		{
-		}
-		catch (IdUnusedException e)
-		{
+			try
+			{
+				MailArchiveChannel channel = MailArchiveService.getMailArchiveChannel((String) state.getAttribute(STATE_CHANNEL_REF));
+				allMessages = channel.getMessagesSearch(search, ascending, pages);
+				// TODO: Think about this
+				state.removeAttribute(STATE_ALL_MESSAGES);
+	        	state.removeAttribute(STATE_ALL_MESSAGES_SEARCH);
+				System.out.println("Back from getMessagesSearch size="+allMessages.size());
+			}
+			catch (PermissionException e)
+			{
+			}
+			catch (IdUnusedException e)
+			{
+			}
+	
+			// deal with no messages
+			if (allMessages == null) return new Vector();
+			
+			return allMessages;
 		}
 
-		// deal with no messages
-		if (allMessages == null) return new Vector();
-
-		// TODO: For now we only do date sorting  and use storage to do it :)
-/*
-		// TODO : Cannot do paging in the store if we are sorting on something other than date
-		// if other than ascending date, sort them all
-		boolean ascending = ((Boolean) state.getAttribute(STATE_ASCENDING)).booleanValue();
-		int sort = ((Integer) state.getAttribute(STATE_SORT)).intValue();
+		// We have a non-date sort and not too many messages in the corpus
+		// so we pull all the messages into memory to do the sorting
+		allMessages = (List) state.getAttribute(STATE_ALL_MESSAGES);
+		String messagesSearch = (String) state.getAttribute(STATE_ALL_MESSAGES_SEARCH);
+		
+		boolean match = (search == null && messagesSearch == null);
+        if ( search != null && search.equals(messagesSearch) )
+        {
+        	match = true;
+        }
+        
+        // If we don't already have the messages - pull them from the database
+        if ( allMessages == null || !match )
+        {
+        	allMessages = null;
+        	state.removeAttribute(STATE_ALL_MESSAGES);
+        	state.removeAttribute(STATE_ALL_MESSAGES_SEARCH);
+        	try
+			{
+				MailArchiveChannel channel = MailArchiveService.getMailArchiveChannel((String) state.getAttribute(STATE_CHANNEL_REF));
+				allMessages = channel.getMessagesSearch(search, ascending, null);
+				state.setAttribute(STATE_ALL_MESSAGES, allMessages);
+				state.setAttribute(STATE_ALL_MESSAGES_SEARCH, search);
+			}
+			catch (PermissionException e)
+			{
+			}
+			catch (IdUnusedException e)
+			{
+			}
+        }
+		
+        if (allMessages == null) allMessages = new Vector();
+		
 		if ((allMessages.size() > 1) && ((!ascending) || (sort != SORT_DATE)))
 		{
 			Collections.sort(allMessages, new MyComparator(sort, ascending));
 		}
-*/
-		return allMessages;
 
+		// Reduced to the proper paged set of things
+        pages.validate(allMessages.size());
+        allMessages = allMessages.subList(pages.getFirst() - 1, pages.getLast());
+
+		return allMessages;
 	} // readPagedResources
 
 	/**
