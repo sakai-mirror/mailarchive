@@ -44,6 +44,7 @@ import java.util.Vector;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.sakaiproject.db.api.SqlReader;
+import org.sakaiproject.db.api.SqlReaderFinishedException;
 import org.sakaiproject.db.api.SqlService;
 import org.sakaiproject.entity.api.Edit;
 import org.sakaiproject.entity.api.Entity;
@@ -911,34 +912,6 @@ System.out.println("COUNT Sql I="+sql);
 
 		// If we are paged in SQL - then do not pass in the pager
 		all = m_sql.dbRead(sql, fields, new SearchFilterReader(container, search,  pagedInSql ? null : pager, false));
-
-		// TODO: Remove this step when we are sure that we are working with
-		// the new DBService - since our reader returns "this" to indicate
-		// when to stop - and the old DBService will just hand this pack to us
-		// we need to post process the list to be sure - should only be
-		// in the order of 100 elements since this is already a post-paged
-		// list
-		if ( pager != null )
-		{
-			int count = (pager.getLast() - pager.getFirst() ) + 1;
-			int endPos = -1;
-			for ( int i = 0; i < all.size(); i ++ )
-			{
-				Object obj = all.get(i);
-				if ( obj instanceof SqlReader )
-				{
-					System.out.println("Found an SqlReader in the post-process loop");
-					endPos = i;
-					break;
-				}
-			}
-			
-			if ( endPos > 0 )
-			{
-				System.out.println("Truncating to "+endPos);
-		        all = all.subList(0, endPos);
-			}			
-		}
 		
         long difference = System.currentTimeMillis() - startClock;
         System.out.println("getAllResources count="+all.size()+" time="+difference);
@@ -971,7 +944,6 @@ System.out.println("COUNT Sql I="+sql);
     	private boolean m_doCount = false;
     	
     	private int count = 0;
-    	private int processCount = 0;
     	
     	// If we are only counting - return a tiny thing - not a big thing
     	private final Integer intValue = 1;
@@ -985,28 +957,30 @@ System.out.println("COUNT Sql I="+sql);
     	}
     	
 		public Object readSqlResultRecord(ResultSet result)
+			throws SqlReaderFinishedException
 		{
-			processCount++;
 			try
 			{
-				// System.out.println("search="+m_search+" pager="+m_pager+" process="+processCount);
-				// Pull out the XML
 				String theXml = result.getString(1);
-				// System.out.println("YO "+theXml.length());
-
-				// TODO: It would be nice to tell our caller that we are finished
-                if ( m_pager != null && count > m_pager.getLast() ) return this;
+                if ( m_pager != null && count > m_pager.getLast() ) 
+                {
+                	// To make this work with the old dbRead
+                	// albeit less efficiently
+                	// return null;
+                	throw new SqlReaderFinishedException();
+                }
 				
                 int iTest = 0;  // Don't know if we have a match
                 if ( m_search != null )
                 {
-                      // System.out.println("XML="+theXml);
                       iTest = matchXml(theXml, m_search);
                 }
                 
-                // If it is clearly rejected
+                // If it is clearly rejected from pre-parse match
                 if ( iTest == -1 ) return null;
                 
+                // If it is a match and we are just counting - no parsing
+                // needed
                 if ( iTest == 1 && m_doCount ) return intValue;
                 
                 // If it is known to be accepted (1) or unsure (0), 
@@ -1022,8 +996,13 @@ System.out.println("COUNT Sql I="+sql);
                 count++;
                 if ( m_pager != null && count < m_pager.getFirst() ) return null;
                 
-                // If we could indicate "finished" - we would do so below
-                if ( m_pager != null && count > m_pager.getLast() ) return this;
+                if ( m_pager != null && count > m_pager.getLast() )
+                {
+                	// To make this work with the old dbRead
+                	// albeit less efficiently
+                	// return null;
+                	throw new SqlReaderFinishedException();
+                }
                 
                 if ( m_doCount ) return intValue;
                 return entry;
