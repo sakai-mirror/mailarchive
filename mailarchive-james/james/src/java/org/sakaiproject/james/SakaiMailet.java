@@ -30,6 +30,7 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
+import java.net.URLEncoder;
 
 import javax.mail.Address;
 import javax.mail.BodyPart;
@@ -84,6 +85,9 @@ public class SakaiMailet extends GenericMailet
 
 	/** The user name of the postmaster user - the one who posts incoming mail. */
 	public static final String POSTMASTER = "postmaster";
+	
+	// used when parsing email header parts
+	private static final String NAME_PREFIX = "name=";
 
 	// Condition: The site doesn't have an email archive turned on
 	public final String errorMsg_I = "Your message cannot be delivered because the site you are emailing"
@@ -587,8 +591,23 @@ public class SakaiMailet extends GenericMailet
 		// everything else gets treated as an attachment
 		else
 		{
-			ContentType cType = new ContentType(type);
 			String name = p.getFileName();
+			
+			// look for UTF8 encoded filenames
+			if ( name == null && type.indexOf(NAME_PREFIX) != -1 )
+			{
+				String encodedFilename = type.substring( type.indexOf(NAME_PREFIX)+NAME_PREFIX.length() );
+				name = MimeUtility.decodeText( encodedFilename );
+				type = type.replace( encodedFilename, name );
+			}
+			
+			// ContentType can't handle filenames with spaces or UTF8 characters
+			if ( name != null )
+			{
+				type = type.replace( name, URLEncoder.encode(name, "UTF-8") );
+			}
+			
+			ContentType cType = new ContentType(type);
 			String disposition = p.getDisposition();
 			int approxSize = p.getSize();
 
