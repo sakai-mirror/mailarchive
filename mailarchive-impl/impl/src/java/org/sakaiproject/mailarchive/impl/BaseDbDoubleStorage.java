@@ -424,7 +424,8 @@ public class BaseDbDoubleStorage
 			{
 				// read the record and get a lock on it (non blocking)
 				String statement = doubleStorageSql.getSelectXml3Sql(m_containerTableName, m_containerTableIdField, Validator.escapeSql(ref));
-				StringBuilder result = new StringBuilder();
+				// back port 2.4
+				StringBuffer result = new StringBuffer();
 				Connection lock = m_sql.dbReadLock(statement, result);
 
 				// for missing or already locked...
@@ -1083,7 +1084,8 @@ System.out.println("COUNT Sql I="+sql);
 				// read the record and get a lock on it (non blocking)
 				String statement = doubleStorageSql.getSelectXml6Sql(m_resourceTableName, m_resourceTableIdField, m_resourceTableContainerIdField,
 						Validator.escapeSql(id), Validator.escapeSql(container.getReference()));
-				StringBuilder result = new StringBuilder();
+				// back port 2.4
+				StringBuffer result = new StringBuffer();
 				Connection lock = m_sql.dbReadLock(statement, result);
 
 				// for missing or already locked...
