@@ -128,11 +128,12 @@ public class MailboxAction extends PagedResourceActionII
     
 	private static final String STATE_COUNT_SEARCH = "state-cached-count-search";   
 	
-	// TODO: Make this pull dynamically from Server Configuration Service
-	// so Tony can play with the setting.
-	private final int MESSAGE_THRESHOLD = 150;
+	// The default threshold above which, we don't pull the message
+	// corpus into memory - this is settable in sakai.properties
+	// as mailarchive.message-threshold
+	private final int MESSAGE_THRESHOLD_DEFAULT = 200;
 	
-    /** paging */
+	/** paging */
 
 	/*
 	 * (non-Javadoc)
@@ -313,7 +314,7 @@ public class MailboxAction extends PagedResourceActionII
 		// we use the database to do the hard work - it will be sorted by date
 		// Only - but we prevent the user from ever using any thing but date sorting
 		// for a large corpus.
-		if ( resourceCount > MESSAGE_THRESHOLD )
+		if ( resourceCount > getMessageThreshold() )
 		{
 			try
 			{
@@ -829,7 +830,7 @@ public class MailboxAction extends PagedResourceActionII
 		SessionState state = ((JetspeedRunData) runData).getPortletSessionState(peid);
 		
 		int resourceCount = sizeResources(state);
-		if ( resourceCount > MESSAGE_THRESHOLD )
+		if ( resourceCount > getMessageThreshold() )
 		{
 			state.setAttribute(STATE_ALERT_MESSAGE,"Too many messages - you can only sort by date.");
 			return;
@@ -890,7 +891,7 @@ public class MailboxAction extends PagedResourceActionII
 		SessionState state = ((JetspeedRunData) runData).getPortletSessionState(peid);
 		
 		int resourceCount = sizeResources(state);
-		if ( resourceCount > MESSAGE_THRESHOLD )
+		if ( resourceCount > getMessageThreshold() )
 		{
 			state.setAttribute(STATE_ALERT_MESSAGE,"Too many messages - you can only sort by date.");
 			return;
@@ -1269,6 +1270,15 @@ public class MailboxAction extends PagedResourceActionII
 		state.setAttribute(PermissionsHelper.PREFIX, "mail.");
 
 	} // doPermissions
+
+	/**
+	 * get the Message Threshold
+	 */
+	private int getMessageThreshold()
+	{
+		return ServerConfigurationService.getInt("mailarchive.message-threshold",
+                                MESSAGE_THRESHOLD_DEFAULT);
+	}
 
 } // MailboxAction
 
