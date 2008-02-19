@@ -202,11 +202,7 @@ public class SakaiMailet extends GenericMailet
 				mailHeaders.add(line);
 			}
 
-			// we will parse the body and attachments later, when we know we need to.
-			String body = null;
-			List attachments = null;
-
-			M_log.info(id + " : mail: from:" + from + " sent: " + TimeService.newTime(sent.getTime()).toStringLocalFull() + " subject: "
+			M_log.debug(id + " : mail: from:" + from + " sent: " + TimeService.newTime(sent.getTime()).toStringLocalFull() + " subject: "
 					+ subject);
 
 			// process for each recipient
@@ -217,7 +213,7 @@ public class SakaiMailet extends GenericMailet
 				try
 				{
 					MailAddress recipient = (MailAddress) it.next();
-					M_log.info(id + " : checking to: " + recipient);
+					M_log.debug(id + " : checking to: " + recipient);
 
 					// is the host ok? %%%
 					// String host = recipient.getHost();
@@ -309,46 +305,42 @@ public class SakaiMailet extends GenericMailet
 						}
 					}
 
-					// prepare the message if it has not yet been prepared - we need it.%%%
-					if (body == null)
+					// prepare the message 
+					StringBuilder bodyBuf[] = new StringBuilder[2];
+					bodyBuf[0] = new StringBuilder();
+					bodyBuf[1] = new StringBuilder();
+					List attachments = attachments = EntityManager.newReferenceList();
+					
+					try
 					{
-						body = "";
-						attachments = EntityManager.newReferenceList();
-						try
+						StringBuilder bodyContentType = new StringBuilder();
+						Integer embedCount = parseParts(msg, id, bodyBuf, bodyContentType, attachments, new Integer(-1));
+						
+						if (bodyContentType.length() > 0)
 						{
-							StringBuilder bodyBuf = new StringBuilder();
-							StringBuilder bodyContentType = new StringBuilder();
-							Integer embedCount = parseParts(msg, id, bodyBuf, bodyContentType, attachments, new Integer(-1));
-							body = bodyBuf.toString();
-							// remove extra line breaks added by mac Mail, perhaps others
-							// characterized by a space followed by a line break
-							body = body.replaceAll(" \n", " ");
-							// treat the message exactly as-is - as plaintext. Stuff like "<b>" will appear
-							// to the users as "<b>", NOT as bolded text. Since the message service
-							// treats messages as formatted text, plaintext must be converted to formatted text encoding.
-							body = FormattedText.convertPlaintextToFormattedText(body);
-							if (bodyContentType.length() > 0)
-							{
-								// save the content type of the message body - which may be different from the
-								// overall MIME type of the message (multipart, etc)
-								mailHeaders.add(MailArchiveService.HEADER_INNER_CONTENT_TYPE + ": " + bodyContentType);
-							}
-						}
-						catch (MessagingException e)
-						{
-							M_log.warn("service(): msg.getContent() threw: " + e);
-						}
-						catch (IOException e)
-						{
-							M_log.warn("service(): msg.getContent() threw: " + e);
+							// save the content type of the message body - which may be different from the
+							// overall MIME type of the message (multipart, etc)
+							mailHeaders.add(MailArchiveService.HEADER_INNER_CONTENT_TYPE + ": " + bodyContentType);
 						}
 					}
-
+					catch (MessagingException e)
+					{
+						M_log.warn("service(): msg.getContent() threw: " + e);
+					}
+					catch (IOException e)
+					{
+						M_log.warn("service(): msg.getContent() threw: " + e);
+					}
+					
 					// post the message to the group's channel
-					channel.addMailArchiveMessage(subject, from.toString(), TimeService.newTime(sent.getTime()), mailHeaders,
-							attachments, body);
-
-					M_log.info(id + " : delivered to:" + mailId);
+					String body[] = new String[2];
+					body[0] = bodyBuf[0].toString(); // plain/text
+					body[1] = bodyBuf[1].toString(); // html/text
+					
+					channel.addMailArchiveMessage(subject, from.toString(), TimeService.newTime(sent.getTime()), 
+															mailHeaders, attachments, body);
+															
+					M_log.debug(id + " : delivered to:" + mailId);
 
 					// all is happy - ghost the message to stop further processing
 					mail.setState(Mail.GHOST);
@@ -374,6 +366,10 @@ public class SakaiMailet extends GenericMailet
 				catch (PermissionException e)
 				{
 					M_log.info(id + " : " + e);
+				}
+				catch (Exception  ex)
+				{
+					M_log.info(id + " : " + ex);
 				}
 			}
 		}
@@ -436,7 +432,7 @@ public class SakaiMailet extends GenericMailet
 			Reference ref = EntityManager.newReference(attachment.getReference());
 			attachments.add(ref);
 
-			M_log.info(id + " : attachment: " + ref.getReference() + " size: " + body.length);
+			M_log.debug(id + " : attachment: " + ref.getReference() + " size: " + body.length);
 
 			return ref;
 		}
@@ -487,7 +483,7 @@ public class SakaiMailet extends GenericMailet
 	 * @param id
 	 *        The string containing the message's id.
 	 * @param bodyBuf
-	 *        The string-buffer in which the message body is being built.
+	 *        The string-buffers in which the plain/text and/or html/text message body is being built.
 	 * @param bodyContentType
 	 *        The value of the Content-Type header for the mesage body.
 	 * @param attachments
@@ -496,39 +492,25 @@ public class SakaiMailet extends GenericMailet
 	 *        An Integer that counts embedded messages (outer message is zero).
 	 * @return Value of embedCount (updated if this call processed any embedded messages).
 	 */
-	protected Integer parseParts(Part p, String id, StringBuilder bodyBuf, StringBuilder bodyContentType, List attachments,
-			Integer embedCount) throws MessagingException, IOException
+	protected Integer parseParts(Part p, String id, StringBuilder bodyBuf[], 
+										  StringBuilder bodyContentType, List attachments,	Integer embedCount) 
+			throws MessagingException, IOException
 	{
-		String closing = "";
-		// process embedded messages
+		// increment embedded message counter
 		if (p instanceof Message)
 		{
-			// increment embedded message counter
-			int thisCount = embedCount.intValue() + 1;
-			embedCount = new Integer(thisCount);
-
-			// process inner messages, inserting start and end labels except for outer message.
-			if (thisCount > 0)
-			{
-				// make sure previous message parts ended with newline
-				if (bodyBuf.length() > 0 && bodyBuf.charAt(bodyBuf.length() - 1) != '\n')
-				{
-					bodyBuf.append("\n");
-				}
-				bodyBuf.append("\n========= Begin embedded email message " + thisCount + " =========\n\n");
-				parseEnvelope((Message) p, id, bodyBuf, attachments, embedCount);
-				closing = "\n========== End embedded email message " + thisCount + " ==========\n\n";
-			}
+			embedCount = new Integer( embedCount.intValue() + 1 );
 		}
-
+		
 		String type = p.getContentType();
 
 		// discard if content-type is unknown
 		if (type == null || type.equals(""))
 		{
-			// do nothing
+			M_log.warn(this+" message with unknown content-type discarded");
 		}
-		// add plain text to body
+		
+		// add plain text to bodyBuf[0]
 		else if (p.isMimeType("text/plain") && p.getFileName() == null)
 		{
 			Object o = p.getContent();
@@ -538,7 +520,8 @@ public class SakaiMailet extends GenericMailet
 			if (o instanceof String)
 			{
 				txt = (String) p.getContent();
-				if (bodyContentType != null && bodyContentType.length() == 0) bodyContentType.append(innerContentType);
+				if (bodyContentType != null && bodyContentType.length() == 0) 
+					bodyContentType.append(innerContentType);
 			}
 
 			else if (o instanceof InputStream)
@@ -550,16 +533,54 @@ public class SakaiMailet extends GenericMailet
 					out.write(buf, 0, len);
 				String charset = (new ContentType(innerContentType)).getParameter("charset");
 				txt = out.toString(MimeUtility.javaCharset(charset));
-				if (bodyContentType != null && bodyContentType.length() == 0) bodyContentType.append(innerContentType);
+				if (bodyContentType != null && bodyContentType.length() == 0) 
+					bodyContentType.append(innerContentType);
 			}
+			
+ 			// remove extra line breaks added by mac Mail, perhaps others
+			// characterized by a space followed by a line break
+			txt = txt.replaceAll(" \n", " ");
 
 			// make sure previous message parts ended with newline
-			if (bodyBuf.length() > 0 && bodyBuf.charAt(bodyBuf.length() - 1) != '\n')
-			{
-				bodyBuf.append("\n");
-			}
-			bodyBuf.append(txt);
+			if (bodyBuf[0].length() > 0 && bodyBuf[0].charAt(bodyBuf[0].length() - 1) != '\n')
+				bodyBuf[0].append("\n");
+			
+			bodyBuf[0].append(txt);
 		}
+
+		// add html text to bodyBuf[1]
+		else if (p.isMimeType("text/html") && p.getFileName() == null)
+		{
+			Object o = p.getContent();
+			String txt = null;
+			String innerContentType = p.getContentType();
+
+			if (o instanceof String)
+			{
+				txt = (String) p.getContent();
+				if (bodyContentType != null && bodyContentType.length() == 0) 
+					bodyContentType.append(innerContentType);
+			}
+
+			else if (o instanceof InputStream)
+			{
+				InputStream in = (InputStream) o;
+				ByteArrayOutputStream out = new ByteArrayOutputStream();
+				byte[] buf = new byte[in.available()];
+				for (int len = in.read(buf); len != -1; len = in.read(buf))
+					out.write(buf, 0, len);
+				String charset = (new ContentType(innerContentType)).getParameter("charset");
+				txt = out.toString(MimeUtility.javaCharset(charset));
+				if (bodyContentType != null && bodyContentType.length() == 0) 
+					bodyContentType.append(innerContentType);
+			}
+
+			// handle embedded images			
+			txt = txt.replaceAll("<img ", "<img alt='' ");
+			
+			bodyBuf[1].append(txt);
+		}
+				
 		// process subparts of multiparts
 		else if (p.isMimeType("multipart/*"))
 		{
@@ -570,24 +591,23 @@ public class SakaiMailet extends GenericMailet
 				embedCount = parseParts(mp.getBodyPart(i), id, bodyBuf, bodyContentType, attachments, embedCount);
 			}
 		}
-		// process embedded messages
-		else if (p.isMimeType("message/rfc822"))
-		{
-			embedCount = parseParts((Part) p.getContent(), id, bodyBuf, bodyContentType, attachments, embedCount);
-		}
+		
 		// Discard parts with mime-type application/applefile. If an e-mail message contains an attachment is sent from
 		// a macintosh, you may get two parts, one for the data fork and one for the resource fork. The part that
 		// corresponds to the resource fork confuses users, this has mime-type application/applefile. The best thing
 		// is to discard it.
 		else if (p.isMimeType("application/applefile"))
 		{
-			// do nothing
+			M_log.warn(this+" message with application/applefile discarded");
 		}
+		
+		// discard enriched text version of the message.
+		// Sakai only uses the plain/text or html/text version of the message.
 		else if (p.isMimeType("text/enriched") && p.getFileName() == null)
 		{
-			// ignore this - it is a enriched text version of the message.
-			// Sakai only uses the plain text version of the message.
+			M_log.warn(this+" message with text/enriched discarded");
 		}
+		
 		// everything else gets treated as an attachment
 		else
 		{
@@ -652,6 +672,10 @@ public class SakaiMailet extends GenericMailet
 				{
 					name += ".xml";
 				}
+				else if (p.isMimeType("message/rfc822"))
+				{
+					name += ".txt"; 
+				}
 			}
 
 			// read the attachments bytes, and create it as an attachment in content hosting
@@ -661,96 +685,21 @@ public class SakaiMailet extends GenericMailet
 				// can we ignore the attachment it it's just whitespace chars??
 				Reference attachment = createAttachment(attachments, cType.getBaseType(), name, bodyBytes, id);
 
-				// attachment reference URL goes here
-				if (attachment != null)
-				{
-					// make sure previous message parts ended with newline
-					if (bodyBuf.length() > 0 && bodyBuf.charAt(bodyBuf.length() - 1) != '\n')
-					{
-						bodyBuf.append("\n");
-					}
-					bodyBuf.append("[see attachment: \"" + name + "\", size: " + bodyBytes.length + " bytes]\n\n");
-				}
+				// add plain/text attachment reference (if plain/text message)
+				if (attachment != null && bodyBuf[0].length() > 0)
+					bodyBuf[0].append("[see attachment: \"" + name + "\", size: " + bodyBytes.length + " bytes]\n\n");
+					
+				// add html/text attachment reference (if html/text message)
+				if (attachment != null && bodyBuf[1].length() > 0)
+					bodyBuf[1].append("<p>[see attachment: \"" + name + "\", size: " + bodyBytes.length + " bytes]</p>");
+					
+				// add plain/text attachment reference (if no plain/text and no html/text)
+				if (attachment != null && bodyBuf[0].length() == 0 && bodyBuf[1].length() == 0)
+					bodyBuf[0].append("[see attachment: \"" + name + "\", size: " + bodyBytes.length + " bytes]\n\n");
 			}
 		}
-		// make sure previous message parts ended with newline
-		if (bodyBuf.length() > 0 && bodyBuf.charAt(bodyBuf.length() - 1) != '\n')
-		{
-			bodyBuf.append("\n");
-		}
-		bodyBuf.append(closing);
-
+		
 		return embedCount;
 	}
 
-	/**
-	 * Saves header info about embedded email messages.
-	 * 
-	 * @param innerMsg
-	 *        The message-part believed to be an embedded message..
-	 * @param id
-	 *        The string containing the outer message's id.
-	 * @param bodyBuf
-	 *        The string-buffer in which the message body is being built.
-	 * @param attachments
-	 *        The ReferenceVector in which references to attachments are collected.
-	 * @param embedCount
-	 *        An Integer that counts embedded messages (Outer message is zero).
-	 */
-	protected void parseEnvelope(Message innerMsg, String id, StringBuilder bodyBuf, List attachments, Integer embedCount)
-			throws MessagingException, IOException
-	{
-		Address[] innerFroms = innerMsg.getFrom();
-		// make sure previous message parts ended with newline
-		if (bodyBuf.length() > 0 && bodyBuf.charAt(bodyBuf.length() - 1) != '\n')
-		{
-			bodyBuf.append("\n");
-		}
-		if (innerFroms != null)
-		{
-			String innerFrom = "";
-			for (int n = 0; n < innerFroms.length; n++)
-			{
-				innerFrom += innerFroms[n].toString();
-			}
-			if (innerFrom.length() > 0)
-			{
-				bodyBuf.append("From: " + innerFrom + "\n");
-			}
-		}
-		Address[] innerRecipients = innerMsg.getRecipients(Message.RecipientType.TO);
-		if (innerRecipients != null)
-		{
-			String innerRecipient = "";
-			for (int n = 0; n < innerRecipients.length; n++)
-			{
-				innerRecipient += innerRecipients[n].toString();
-			}
-			if (innerRecipient.length() > 0)
-			{
-				bodyBuf.append("To: " + innerRecipient + "\n");
-			}
-		}
-		String innerSubject = innerMsg.getSubject().trim();
-		if (innerSubject.equals(""))
-		{
-			innerSubject = "<no subject>";
-		}
-		Date innerDate = innerMsg.getSentDate();
-
-		bodyBuf.append("Subject: " + innerSubject + "\nDate: " + innerDate.toString() + "\n\n");
-		Enumeration innerHdrs = innerMsg.getAllHeaders();
-		String hdrStr = new String();
-		while (innerHdrs.hasMoreElements())
-		{
-			Header iHdr = (Header) innerHdrs.nextElement();
-			hdrStr += iHdr.getName() + ": " + iHdr.getValue() + "\n";
-		}
-		if (hdrStr.length() > 0)
-		{
-			String name = "headers" + embedCount.toString() + ".txt";
-			Reference attachment = createAttachment(attachments, "text/plain", name, hdrStr.getBytes(), id);
-			bodyBuf.append("[see attachment: \"" + name + "\" size: " + hdrStr.length() + " bytes]\n\n");
-		}
-	}
 }

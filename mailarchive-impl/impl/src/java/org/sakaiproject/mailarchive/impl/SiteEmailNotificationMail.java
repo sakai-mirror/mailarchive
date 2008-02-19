@@ -129,19 +129,6 @@ public class SiteEmailNotificationMail extends SiteEmailNotification
 		return filteredHeaders;
 	}
 
-	/**
-	 * @inheritDoc
-	 */
-	protected String getTag(String newline, String title)
-	{
-		// tag the message
-		String rv = newline + rb.getString("separator") + newline + rb.getString("this") + " "
-				+ ServerConfigurationService.getString("ui.service", "Sakai") + " (" + ServerConfigurationService.getPortalUrl()
-				+ ") " + rb.getString("forthe") + " " + title + " " + rb.getString("site") + newline + rb.getString("youcan")
-				+ newline;
-		return rv;
-	}
-
 	@Override
 	protected String htmlContent() {
 		StringBuilder buf = new StringBuilder();
@@ -161,31 +148,28 @@ public class SiteEmailNotificationMail extends SiteEmailNotification
 			Site site = SiteService.getSite(siteId);
 			title = site.getTitle();
 		}
-		catch (Exception ignore)
-		{
-		}
+		catch (Exception ignore) {}
 
-		// use the message's body
-		buf.append(Web.encodeUrlsAsHtml(msg.getBody()));
+		// if html isn't available, convert plain-text into html
+		buf.append( msg.getFormattedBody() );
 
 		// add any attachments
 		List attachments = hdr.getAttachments();
 		if (attachments.size() > 0)
 		{
-			buf.append("<br/>\n" + "Attachments:<br/>\n");
+			buf.append("<br/>" + "Attachments:<br/>");
 			for (Iterator iAttachments = attachments.iterator(); iAttachments.hasNext();)
 			{
 				Reference attachment = (Reference) iAttachments.next();
 				String attachmentTitle = attachment.getProperties().getPropertyFormatted(ResourceProperties.PROP_DISPLAY_NAME);
-				buf.append("<br/>\n<a href=\"" + attachment.getUrl() + "\" >" + attachmentTitle + "</a><br/>\n");
+				buf.append("<br/><a href=\"" + attachment.getUrl() + "\" >" + attachmentTitle + "</a><br/>");
 			}
 		}
 		
 		// tag the message
-		buf.append("<br/>\n<hr/><br/>\n" + rb.getString("this") + " "
-				+ ServerConfigurationService.getString("ui.service", "Sakai") + " (<a href=\"" + ServerConfigurationService.getPortalUrl()
-				+ "\" >" + ServerConfigurationService.getPortalUrl() + "<a/>) " + rb.getString("forthe") + " " + title + " " + rb.getString("site") + "<br/>\n" + rb.getString("youcan")
-				+ "<br/>\n");
+		buf.append("<br/><hr/><br/>" 
+				+ rb.getString("this") + " " + ServerConfigurationService.getString("ui.service", "Sakai") + " (<a href=\"" + ServerConfigurationService.getPortalUrl() + "\" >" + ServerConfigurationService.getPortalUrl() + "<a/>) " + rb.getString("forthe") + " " + title + " " + rb.getString("site") + "<br/>" 
+				+ rb.getString("youcan") + "<br/>");
 
 		return buf.toString();
 	}
@@ -214,20 +198,19 @@ public class SiteEmailNotificationMail extends SiteEmailNotification
 			Site site = SiteService.getSite(siteId);
 			title = site.getTitle();
 		}
-		catch (Exception ignore)
-		{
-		}
+		catch (Exception ignore) {}
 
-		// use the message's body
-		// %%% JANDERSE convert to plaintext - email is currently sent plaintext only,
-		// so text formatting that may be present in the message should be removed.
-		buf.append(FormattedText.convertFormattedTextToPlaintext(msg.getBody()));
+		// if plain-text isn't available, convert html into plain text
+		if ( msg.getBody() != null && msg.getBody().length() > 0 )
+			buf.append( msg.getBody() );
+		else
+			buf.append(FormattedText.convertFormattedTextToPlaintext(msg.getHtmlBody()));
 
 		// add any attachments
 		List attachments = hdr.getAttachments();
 		if (attachments.size() > 0)
 		{
-			buf.append("\n" + "Attachments:\n");
+			buf.append("\n\n" + "Attachments:\n");
 			for (Iterator iAttachments = attachments.iterator(); iAttachments.hasNext();)
 			{
 				Reference attachment = (Reference) iAttachments.next();
@@ -238,10 +221,9 @@ public class SiteEmailNotificationMail extends SiteEmailNotification
 		}
 		
 		// tag the message
-		buf.append("\n" + rb.getString("separator") + "\n" + rb.getString("this") + " "
-				+ ServerConfigurationService.getString("ui.service", "Sakai") + " (" + ServerConfigurationService.getPortalUrl()
-				+ ") " + rb.getString("forthe") + " " + title + " " + rb.getString("site") + "\n" + rb.getString("youcan")
-				+ "\n");
+		buf.append("\n" + rb.getString("separator") + "\n" 
+				+ rb.getString("this") + " " + ServerConfigurationService.getString("ui.service", "Sakai") + " (" + ServerConfigurationService.getPortalUrl() + ") " + rb.getString("forthe") + " " + title + " " + rb.getString("site") + "\n" 
+				+ rb.getString("youcan") + "\n");
 
 		return buf.toString();
 	}
