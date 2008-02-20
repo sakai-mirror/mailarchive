@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.text.MessageFormat;
 
 import org.sakaiproject.component.cover.ServerConfigurationService;
 import org.sakaiproject.entity.api.Reference;
@@ -49,7 +50,7 @@ import org.sakaiproject.util.Web;
  */
 public class SiteEmailNotificationMail extends SiteEmailNotification
 {
-	// borrow from announcement's notification class
+	// ResourceBundle _not_ ResourceLoader -- we want the site's default locale
 	private static ResourceBundle rb = ResourceBundle.getBundle("siteemaanc");
 
 	/**
@@ -167,9 +168,12 @@ public class SiteEmailNotificationMail extends SiteEmailNotification
 		}
 		
 		// tag the message
-		buf.append("<br/><hr/><br/>" 
-				+ rb.getString("this") + " " + ServerConfigurationService.getString("ui.service", "Sakai") + " (<a href=\"" + ServerConfigurationService.getPortalUrl() + "\" >" + ServerConfigurationService.getPortalUrl() + "<a/>) " + rb.getString("forthe") + " " + title + " " + rb.getString("site") + "<br/>" 
-				+ rb.getString("youcan") + "<br/>");
+		buf.append("<br/><hr/><br/>");
+		String portalUrl = "<a href=\"" + ServerConfigurationService.getPortalUrl() + "\" >" + ServerConfigurationService.getPortalUrl() + "<a/>"; 
+		buf.append( MessageFormat.format( rb.getString("automsg1"),  
+													 new Object[]{ServerConfigurationService.getString("ui.service", "Sakai"), 
+																	  portalUrl, title} ));
+		buf.append( "<br/>" + rb.getString("automsg2")+"<br/>" );
 
 		return buf.toString();
 	}
@@ -221,9 +225,11 @@ public class SiteEmailNotificationMail extends SiteEmailNotification
 		}
 		
 		// tag the message
-		buf.append("\n" + rb.getString("separator") + "\n" 
-				+ rb.getString("this") + " " + ServerConfigurationService.getString("ui.service", "Sakai") + " (" + ServerConfigurationService.getPortalUrl() + ") " + rb.getString("forthe") + " " + title + " " + rb.getString("site") + "\n" 
-				+ rb.getString("youcan") + "\n");
+		buf.append("\n----------------------\n" );
+		buf.append( MessageFormat.format( rb.getString("automsg1"),
+													  new Object[]{ServerConfigurationService.getString("ui.service", "Sakai"), 
+																		ServerConfigurationService.getPortalUrl(), title} ));
+		buf.append( "\n" + rb.getString("automsg2") + "\n" );
 
 		return buf.toString();
 	}

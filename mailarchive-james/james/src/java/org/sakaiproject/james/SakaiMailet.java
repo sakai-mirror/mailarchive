@@ -72,6 +72,7 @@ import org.sakaiproject.user.cover.UserDirectoryService;
 import org.sakaiproject.util.FormattedText;
 import org.sakaiproject.util.StringUtil;
 import org.sakaiproject.util.Validator;
+import org.sakaiproject.util.ResourceLoader;
 
 /**
  * <p>
@@ -80,6 +81,9 @@ import org.sakaiproject.util.Validator;
  */
 public class SakaiMailet extends GenericMailet
 {
+	/** Resource bundle using current language locale */
+	private static ResourceLoader rb = new ResourceLoader("sakaimailet");
+
 	/** Our logger. */
 	private static Log M_log = LogFactory.getLog(SakaiMailet.class);
 
@@ -88,28 +92,6 @@ public class SakaiMailet extends GenericMailet
 	
 	// used when parsing email header parts
 	private static final String NAME_PREFIX = "name=";
-
-	// Condition: The site doesn't have an email archive turned on
-	public final String errorMsg_I = "Your message cannot be delivered because the site you are emailing"
-			+ " does not have the email feature turned on. Please contact the site"
-			+ " owner to ask about enabling this feature on the site." + "\n\n"
-			+ "If you have further questions about this feature, please email "
-			+ ServerConfigurationService.getString("mail.support", "");
-
-	// Condition: The site is not existing.
-	public final String errorMsg_III = "Your message cannot be delivered because the address is unknown. " + "\n\n"
-			+ "If you have further questions about this feature, please email "
-			+ ServerConfigurationService.getString("mail.support", "");
-
-	// Condition: The from email was not matched to a user with permission to send to the system
-	public final String errorMsg_IV = "Your message cannot be delivered because you are not a member of the site, or you are a member "
-			+ "but don't have the permission to send email to the site, or because you are registered with a different email address. "
-			+ "If you are sending email from the correct email address, and you believe your email should be accepted "
-			+ "at the site please contact the site owner and have them check the permission settings for the email "
-			+ "archive tool under 'Permissions' for that tool. "
-			+ "\n\n"
-			+ "If you have further questions about this feature, please contact "
-			+ ServerConfigurationService.getString("mail.support", "");
 
 	/**
 	 * Called when created.
@@ -284,7 +266,12 @@ public class SakaiMailet extends GenericMailet
 						}
 						else
 						{
-							mail.setErrorMessage(errorMsg_I);
+							String errMsg = rb.getString("err_email_off") + "\n\n";
+							String mailSupport = StringUtil.trimToNull( ServerConfigurationService.getString("mail.support") );
+							if ( mailSupport != null )
+								errMsg +=(String) rb.getFormattedMessage("err_questions",  new Object[]{mailSupport})+"\n";
+
+							mail.setErrorMessage(errMsg);
 						}
 
 						M_log.info(id + " : mail rejected: channel not enabled: " + mailId);
@@ -300,7 +287,11 @@ public class SakaiMailet extends GenericMailet
 						{
 							M_log.info(id + " : mail rejected: from: " + fromAddr + " not authorized for site: " + mailId);
 
-							mail.setErrorMessage(errorMsg_IV);
+							String errMsg = rb.getString("err_not_member") + "\n\n";
+							String mailSupport = StringUtil.trimToNull( ServerConfigurationService.getString("mail.support") );
+							if ( mailSupport != null )
+								errMsg +=(String) rb.getFormattedMessage("err_questions",  new Object[]{mailSupport})+"\n";
+							mail.setErrorMessage(errMsg);
 							continue;
 						}
 					}
@@ -361,7 +352,11 @@ public class SakaiMailet extends GenericMailet
 					}
 
 					M_log.info(id + " : mail rejected: " + goOn.toString());
-					mail.setErrorMessage(errorMsg_III);
+					String errMsg = rb.getString("err_addr_unknown") + "\n\n";
+					String mailSupport = StringUtil.trimToNull( ServerConfigurationService.getString("mail.support") );
+					if ( mailSupport != null )
+						errMsg +=(String) rb.getFormattedMessage("err_questions",  new Object[]{mailSupport})+"\n";
+					mail.setErrorMessage(errMsg);
 				}
 				catch (PermissionException e)
 				{
