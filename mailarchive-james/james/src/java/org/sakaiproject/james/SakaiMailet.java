@@ -93,6 +93,10 @@ public class SakaiMailet extends GenericMailet
 	// used when parsing email header parts
 	private static final String NAME_PREFIX = "name=";
 
+	// used to remove javascript from html
+	private static final String START_JAVASCRIPT = "<script";
+	private static final String END_JAVASCRIPT = "</script>";
+	
 	/**
 	 * Called when created.
 	 */
@@ -570,8 +574,8 @@ public class SakaiMailet extends GenericMailet
 					bodyContentType.append(innerContentType);
 			}
 
-			// handle embedded images			
-			txt = txt.replaceAll("<img ", "<img alt='' ");
+			// remove bad image tags and naughty javascript
+			txt = cleanHtml( txt );
 			
 			bodyBuf[1].append(txt);
 		}
@@ -695,6 +699,35 @@ public class SakaiMailet extends GenericMailet
 		}
 		
 		return embedCount;
+	}
+	
+	/**
+	 ** Make sure any HTML is 'clean' (no javascript, invalid image tags)
+	 **/
+	protected String cleanHtml( String htmlStr )
+	{
+		// handle embedded images			
+		htmlStr = htmlStr.replaceAll("<img ", "<img alt='' ");
+			
+		// remove all javascript (risk of exploit)
+		// note that String.replaceAll() does not reliably handle line terminators, 
+		// so javascript is removed string by string
+		while ( htmlStr.indexOf(START_JAVASCRIPT) != -1 )
+		{
+			int badStart = htmlStr.indexOf(START_JAVASCRIPT);
+			int badEnd = htmlStr.indexOf(END_JAVASCRIPT);
+			String badHtml;
+		
+			if ( badStart > -1 && badEnd == -1)
+				badHtml = htmlStr.substring( badStart );
+			else
+				badHtml = htmlStr.substring( badStart, badEnd+END_JAVASCRIPT.length() );
+				
+			// use replace( CharSequence, CharSequence) -- no regexp
+			htmlStr = htmlStr.replace( new StringBuilder(badHtml), new StringBuilder() );
+		}
+
+		return htmlStr;
 	}
 
 }
