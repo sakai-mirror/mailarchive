@@ -62,9 +62,6 @@ import org.sakaiproject.util.ResourceLoader;
 import org.sakaiproject.util.StringUtil;
 import org.sakaiproject.util.Validator;
 
-import org.sakaiproject.time.cover.TimeService;
-import java.lang.Thread;
-
 /**
  * <p>
  * MailboxAction is a the Sakai mailbox tool.
@@ -128,9 +125,7 @@ public class MailboxAction extends PagedResourceActionII
     
 	private static final String STATE_COUNT_SEARCH = "state-cached-count-search";   
 	
-	// TODO: Make this pull dynamically from Server Configuration Service
-	// so Tony can play with the setting.
-	private final int MESSAGE_THRESHOLD = 150;
+	private final int MESSAGE_THRESHOLD_DEFAULT = 250;
 	
     /** paging */
 
@@ -148,7 +143,6 @@ public class MailboxAction extends PagedResourceActionII
         // at the lower layer
         Integer lastCount = (Integer) state.getAttribute(STATE_COUNT);
         String countSearch = (String) state.getAttribute(STATE_COUNT_SEARCH);
-        System.out.println("Search="+search+" countSearch="+countSearch+" lastCount="+lastCount);
 
         if ( search == null && countSearch == null && lastCount != null )
         {
@@ -180,9 +174,7 @@ public class MailboxAction extends PagedResourceActionII
         try
 		{
 			MailArchiveChannel channel = MailArchiveService.getMailArchiveChannel((String) state.getAttribute(STATE_CHANNEL_REF));
-            System.out.println("SizeResources Search = "+search);
             int cCount = channel.countMessagesSearch(search);
-            System.out.println("SizeResources Returns Channel count = "+cCount);
             
             lastCount = new Integer(cCount);
             state.setAttribute(STATE_COUNT, lastCount);
@@ -304,16 +296,14 @@ public class MailboxAction extends PagedResourceActionII
 		int sort = ((Integer) state.getAttribute(STATE_SORT)).intValue();		
 		String search = (String) state.getAttribute(STATE_SEARCH);
 		PagingPosition pages = new PagingPosition(first, last);
-		System.out.println("readPagedResources Sort ="+ sort+" search = "+search+" first="+first+" last="+last);
 		
 		int resourceCount = sizeResources(state);
-		System.out.println("resourceCount = "+resourceCount);
 
 		// If we are sorted by date, or our message corpus is too large
 		// we use the database to do the hard work - it will be sorted by date
 		// Only - but we prevent the user from ever using any thing but date sorting
 		// for a large corpus.
-		if ( resourceCount > MESSAGE_THRESHOLD )
+		if ( resourceCount > getMessageThreshold() )
 		{
 			try
 			{
@@ -321,7 +311,6 @@ public class MailboxAction extends PagedResourceActionII
 				allMessages = channel.getMessagesSearch(search, ascending, pages);
 				state.removeAttribute(STATE_ALL_MESSAGES);
 	        	state.removeAttribute(STATE_ALL_MESSAGES_SEARCH);
-				System.out.println("Back from getMessagesSearch size="+allMessages.size());
 			}
 			catch (Exception e)
 			{
@@ -457,27 +446,8 @@ public class MailboxAction extends PagedResourceActionII
 			return buildViewModeContext(portlet, context, rundata, state);
 		}
 
-		else if (MODE_OPTIONS.equals(mode)) {
-			// A bad hack to fill up a mailbox quickly to test paging.
-			System.out.println("HACKING!!!!");
-			try {
-				MailArchiveChannel channel = MailArchiveService
-						.getMailArchiveChannel((String) state
-								.getAttribute(STATE_CHANNEL_REF));
-				System.out.println("channel = " + channel);
-
-				List mailHeaders = new Vector();
-				for (int i = 1; i < 5; i++) {
-					channel.addMailArchiveMessage("Subject "
-							+ TimeService.newTime(), "from "
-							+ TimeService.newTime(), TimeService.newTime(),
-							mailHeaders, null, "Body " + TimeService.newTime());
-					Thread.sleep(2);
-				}
-			} catch (Exception e) {
-				System.out.println("BOLLOX");
-				e.printStackTrace();
-			}
+		else if (MODE_OPTIONS.equals(mode)) 
+		{
 			return buildOptionsPanelContext(portlet, context, rundata, state);
 		}
 
@@ -502,36 +472,33 @@ public class MailboxAction extends PagedResourceActionII
 		context.put("tlang", rb);
 		prepPage(state);
 
-        String id = (String) state.getAttribute(STATE_MSG_VIEW_ID);
-        
-        String channelRef = (String) state.getAttribute(STATE_CHANNEL_REF);
-        MailArchiveChannel channel = null;
-        try 
-        {
-        	channel = MailArchiveService.getMailArchiveChannel(channelRef);
-        }
-        catch (Exception e)
-        {
-        	Log.warn("chef", "Cannot find channel "+channelRef);
-        }
-        
-		int pos = -1;
+		String id = (String) state.getAttribute(STATE_MSG_VIEW_ID);
+
+		String channelRef = (String) state.getAttribute(STATE_CHANNEL_REF);
+		MailArchiveChannel channel = null;
+		try 
+		{
+			channel = MailArchiveService.getMailArchiveChannel(channelRef);
+		}
+		catch (Exception e)
+		{
+			Log.warn("chef", "Cannot find channel "+channelRef);
+		}
+
 		List resources = (List) state.getAttribute(STATE_ALL_MESSAGES);
 		boolean found = false;
 		boolean foundInState = false;
 		if (resources != null)
 		{
-			for (int i = 0; i < resources.size(); i++)
-			{
-				// if this is the one, return this index
-				MailArchiveMessage msg = (MailArchiveMessage) (resources.get(i));
-				if ( msg.getId().equals(id) ) {
-					context.put("email",msg);
-					if ( channel != null ) allowDelete = channel.allowRemoveMessage(msg);
-					found = true;
-					foundInState = true;
-				}
-			}
+			int pos = ((Integer) state.getAttribute(STATE_VIEW_ID)).intValue();
+			MailArchiveMessage message = (MailArchiveMessage) resources.get(pos);
+			// fix for SAK-5879
+			// make sure STATE_MSG_VIEW_ID is updated so that Confirm mode will have access to the correct message id
+			state.setAttribute(STATE_MSG_VIEW_ID, message.getId());
+			context.put("email",message);
+			if ( channel != null ) allowDelete = channel.allowRemoveMessage(message);
+			found = true;
+			foundInState = true;
 		}
 		
 		// Not in state - retrieve the message in service the message using the service
@@ -829,7 +796,7 @@ public class MailboxAction extends PagedResourceActionII
 		SessionState state = ((JetspeedRunData) runData).getPortletSessionState(peid);
 		
 		int resourceCount = sizeResources(state);
-		if ( resourceCount > MESSAGE_THRESHOLD )
+		if ( resourceCount > getMessageThreshold() )
 		{
 			state.setAttribute(STATE_ALERT_MESSAGE,"Too many messages - you can only sort by date.");
 			return;
@@ -890,7 +857,7 @@ public class MailboxAction extends PagedResourceActionII
 		SessionState state = ((JetspeedRunData) runData).getPortletSessionState(peid);
 		
 		int resourceCount = sizeResources(state);
-		if ( resourceCount > MESSAGE_THRESHOLD )
+		if ( resourceCount > getMessageThreshold() )
 		{
 			state.setAttribute(STATE_ALERT_MESSAGE,"Too many messages - you can only sort by date.");
 			return;
@@ -1269,6 +1236,15 @@ public class MailboxAction extends PagedResourceActionII
 		state.setAttribute(PermissionsHelper.PREFIX, "mail.");
 
 	} // doPermissions
+
+        /**
+         * get the Message Threshold
+         */
+        private int getMessageThreshold()
+        {
+                return ServerConfigurationService.getInt("mailarchive.message-threshold",
+                                MESSAGE_THRESHOLD_DEFAULT);
+        }
 
 } // MailboxAction
 

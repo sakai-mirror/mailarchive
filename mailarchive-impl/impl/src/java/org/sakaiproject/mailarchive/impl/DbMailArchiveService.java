@@ -211,7 +211,6 @@ public class DbMailArchiveService extends BaseMailArchiveService
     @Override
     public int countMessagesService(BaseMessageChannelEdit chan) throws PermissionException
 	{
-			System.out.println("DB countMessagesService");
 			return ((DbStorage) m_storage).countMessages(chan);
 	}
 
@@ -221,7 +220,6 @@ public class DbMailArchiveService extends BaseMailArchiveService
     @Override
 	public int countMessagesSearchService(BaseMessageChannelEdit chan, String search) throws PermissionException
 	{
-			System.out.println("DB countMessagesServiceSearch search="+search);
 			return ((DbStorage) m_storage).countMessagesSearch(chan, search);
 	}
     
@@ -229,7 +227,6 @@ public class DbMailArchiveService extends BaseMailArchiveService
     public List getMessagesSearchService(BaseMessageChannelEdit chan, String search, boolean asc, PagingPosition pager)
         throws PermissionException
 	{
-			System.out.println("DB getMessagesSearchService search="+search);
 			return ((DbStorage) m_storage).getMessages(chan, search, asc, pager);
 	}
     // TODO: End temporary workaround to make this backwards compatible
@@ -263,10 +260,8 @@ public class DbMailArchiveService extends BaseMailArchiveService
 		// don't know"
 		@Override
 		public int matchXml(String xml, String search) {
-			// System.out.println("DBMailArchiveService search=" + search + " xml=\n" + xml);
 
 			// String matcher = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-			// System.out.println(matcher);
 			if (!xml.startsWith("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"))
 				return 0;
 
@@ -282,15 +277,12 @@ public class DbMailArchiveService extends BaseMailArchiveService
 			String body = getXmlAttr(xml, "body");
 			String from = getXmlAttr(xml, "from");
 			String subject = getXmlAttr(xml, "subject");
-			// System.out.println("body=" + body);
-			// System.out.println("from=" + from + " subject=" + subject);
 			if (body == null || from == null || subject == null)
 				return 0;
 
 			try {
 				byte[] decoded = CommonsCodecBase64.decodeBase64(body.getBytes("UTF-8"));
 				body = new String(decoded, "UTF-8");
-				// System.out.println("new body=" + body);
 			} catch (Exception e) {
 				return 0;
 			}
@@ -298,7 +290,6 @@ public class DbMailArchiveService extends BaseMailArchiveService
 			if (StringUtil.containsIgnoreCase(subject, search)
 					|| StringUtil.containsIgnoreCase(from, search)
 					|| StringUtil.containsIgnoreCase(body, search)) {
-				// System.out.println("YAYAYAYAYAY");
 				return 1;
 			}
 			return -1;
@@ -308,12 +299,9 @@ public class DbMailArchiveService extends BaseMailArchiveService
 	    {
 	    	String lookfor = tagName+"=\""; 
 	    	int ipos = xml.indexOf(lookfor);
-	    	// System.out.println("tag = "+tagName+" ipos="+ipos);
 	    	if ( ipos < 1 ) return null;
 	    	ipos = ipos + lookfor.length();
-	    	// System.out.println("ipos = "+ipos);
 	    	int jpos = xml.indexOf("\"",ipos);
-	    	// System.out.println("pos = "+jpos);
 	    	if ( jpos < 1 || ipos > jpos ) return null;
 	    	return xml.substring(ipos,jpos);
 	    }
@@ -323,13 +311,11 @@ public class DbMailArchiveService extends BaseMailArchiveService
         @Override
         public boolean matchEntity(Entity entry, String search)
         {
-            // System.out.println("DB MAIL ENTITY MATCHING!!!! "+search+" ent="+entry);
             MailArchiveMessage msg = (MailArchiveMessage) entry;
 			if (StringUtil.containsIgnoreCase(msg.getMailArchiveHeader().getSubject(), search)
 					|| StringUtil.containsIgnoreCase(msg.getMailArchiveHeader().getFromAddress(), search)
 					|| StringUtil.containsIgnoreCase(FormattedText.convertFormattedTextToPlaintext(msg.getBody()), search))
 			{
-                // System.out.println("YAYAYAYAYAY");
 				return true;
 			}
             return false;

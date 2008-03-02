@@ -771,10 +771,8 @@ public class BaseDbDoubleStorage
      */
     public int countResources(Entity container)
     {
-        long startClock = System.currentTimeMillis();
         // read With or without a filter
 		String sql = doubleStorageSql.getCountSql(m_resourceTableName, m_resourceTableContainerIdField);
-System.out.println("COUNT Sql I="+sql);
 		Object[] fields = new Object[1];
 		fields[0] = container.getReference();
 		List countList = m_sql.dbRead(sql, fields, null);
@@ -782,8 +780,6 @@ System.out.println("COUNT Sql I="+sql);
         if ( countList.isEmpty() ) return 0;
         
         Object obj = countList.get(0);
-        long difference = System.currentTimeMillis() - startClock;
-        System.out.println("CountResources = "+obj+" time="+difference);
         String str = (String) obj;
         return Integer.parseInt(str);
     }
@@ -800,21 +796,16 @@ System.out.println("COUNT Sql I="+sql);
      */
     public int countResources(Entity container, Filter filter, String search)
     {
-        long startClock = System.currentTimeMillis();
         if ( search == null && filter == null ) return countResources(container);
-                
-        System.out.println("countResources filter="+filter+" search="+search);
+
         if ( filter != null ) System.out.println("Filter not supported yet");
 
 		String sql = doubleStorageSql.getSelectXml5Sql(m_resourceTableName, m_resourceTableContainerIdField, null, false);
-        System.out.println("Count Search SQL="+sql);
 		Object[] fields = new Object[1];
 		fields[0] = container.getReference();
 		List all = m_sql.dbRead(sql, fields, new SearchFilterReader(container, search,  null, true));
 		int count = all.size();
 
-        long difference = System.currentTimeMillis() - startClock;
-        System.out.println("Count/Search Finished count="+count+" time="+difference);
         return count;
     }
 
@@ -865,21 +856,15 @@ System.out.println("COUNT Sql I="+sql);
 	 */
 	public List getAllResources(Entity container, String filter, String search, boolean asc, PagingPosition pager)
 	{
-		long startClock = System.currentTimeMillis();
 		List all = new Vector();
-
-		System.out.println("getAllResources e="+container+" f="+filter+" asc="+asc+" search="+search+" pag="+pager);
         
 		// read With or without a filter
 		String sql = doubleStorageSql.getSelectXml5Sql(m_resourceTableName, m_resourceTableContainerIdField, m_resourceTableOrderField, asc);
-		System.out.println("Sql I="+sql);
         if ( filter != null ) 
         {
             sql = doubleStorageSql.getSelectXml5filterSql(m_resourceTableName, m_resourceTableContainerIdField, m_resourceTableOrderField, asc, filter);
 		}
         
-        // System.out.println("Sql II="+sql);    
-
         // If we are not doing a search and we have a record range
         // see if we can use SQL to limit the range - if our database 
         // does not support LIMIT (in one or another form), then lets
@@ -906,16 +891,12 @@ System.out.println("COUNT Sql I="+sql);
             }
         }
 
-        System.out.println("Sql III="+sql);  
-        
 		Object[] fields = new Object[1];
 		fields[0] = container.getReference();
 
 		// If we are paged in SQL - then do not pass in the pager
 		all = m_sql.dbRead(sql, fields, new SearchFilterReader(container, search,  pagedInSql ? null : pager, false));
 		
-        long difference = System.currentTimeMillis() - startClock;
-        System.out.println("getAllResources count="+all.size()+" time="+difference);
 		return all;
 	}
     
@@ -933,7 +914,6 @@ System.out.println("COUNT Sql I="+sql);
     // TODO: Add Warning when this is used - but only do it once
     public boolean matchEntity(Entity entry, String search)
     {
-        System.out.println("BASE DB MATCHING Entity!!!! "+search+" ent="+entry);
         return false;
     }
     
