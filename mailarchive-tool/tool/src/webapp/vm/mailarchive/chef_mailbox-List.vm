@@ -2,6 +2,7 @@
 <script type="text/javascript" language="JavaScript">
   focus_path = ["search"];
 </script>
+<!-- Test Me ${testme} -->
 <div class="portletBody">
 	#if($menu)#toolbar($menu)#end
 	<form name="toolbar" action="#toolForm("$action")" method="post">
@@ -130,12 +131,13 @@
 					</a>
 				</th>
 			</tr>
+			#set($msgPos=$topMsgPosInt)
 			#foreach ($item in $messages)
 				<tr>
 					<td headers="from">$validator.escapeHtml($item.Header.FromAddress)</td>
 					<td headers="subject">
 						<h4><a href="#" 
-						onclick="location = '#toolLinkParam($action "doView" "$view-id=$validator.escapeUrl($item.Header.Id)")';return false;" 
+						onclick="location = '#toolLinkParam($action "doView" "$view-id=$validator.escapeUrl($item.Header.Id)&amp;item_number=$msgPos")';return false;" 
 						title="$tlang.getString("lis.viewmessage") $validator.escapeHtml($item.Header.Subject)">
 							$validator.escapeHtml($item.Header.Subject)
 
@@ -159,6 +161,7 @@
 					</td>
 					<td headers="date">$item.Header.DateSent.toStringLocalFullZ()</td>
 				</tr>
+				#set($msgPos=$msgPos+1)
 			#end		
 		</table>
 	#else

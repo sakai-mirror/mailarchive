@@ -45,6 +45,7 @@ import org.sakaiproject.util.commonscodec.CommonsCodecBase64;
 
 import org.sakaiproject.javax.PagingPosition;
 import org.sakaiproject.javax.Filter;
+import org.sakaiproject.javax.Query;
 import org.sakaiproject.util.FormattedText;
 import org.sakaiproject.util.StringUtil;
 import org.sakaiproject.mailarchive.api.MailArchiveMessage;
@@ -71,7 +72,9 @@ public class DbMailArchiveService extends BaseMailArchiveService
 	/** If true, we do our locks in the remote database, otherwise we do them here. */
 	protected boolean m_locksInDb = true;
 
-	protected static final String[] FIELDS = { "MESSAGE_DATE", "OWNER", "DRAFT", "PUBVIEW" };
+	protected static final String[] FIELDS = { "MESSAGE_DATE", "OWNER", "DRAFT", "PUBVIEW", "SUBJECT", "BODY", "HTMLBODY"};
+
+	protected static final String[] SEARCH_FIELDS = { "OWNER", "SUBJECT", "BODY" };
 
 	/**********************************************************************************************************************************************************************************************************************************************************
 	 * Constructors, Dependencies and their setter methods
@@ -167,6 +170,7 @@ public class DbMailArchiveService extends BaseMailArchiveService
 			if (m_autoDdl)
 			{
 				m_sqlService.ddl(this.getClass().getClassLoader(), "sakai_mailarchive");
+				m_sqlService.ddl(this.getClass().getClassLoader(), "sakai_mailarchive_2_6_0");
 			}
 
 			super.init();
@@ -216,9 +220,8 @@ public class DbMailArchiveService extends BaseMailArchiveService
 		public DbStorage(StorageUser user)
 		{
 			super(m_cTableName, "CHANNEL_ID", m_rTableName, "MESSAGE_ID", "CHANNEL_ID", "MESSAGE_DATE", "OWNER", "DRAFT",
-					"PUBVIEW", FIELDS, m_locksInDb, "channel", "message", user, m_sqlService);
+					"PUBVIEW", FIELDS, SEARCH_FIELDS, m_locksInDb, "channel", "message", user, m_sqlService);
 			m_locksAreInTable = false;
-
 		} // DbStorage
         
 		/* matchXml - Optionaly do a pre-de-serialize match

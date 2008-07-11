@@ -322,12 +322,14 @@ public abstract class BaseMailArchiveService extends BaseMessageService implemen
 	 */
 	public Object[] storageFields(Entity r)
 	{
-		Object[] rv = new Object[4];
+		Object[] rv = new Object[7];
 		rv[0] = ((Message) r).getHeader().getDate();
 		rv[1] = ((Message) r).getHeader().getFrom().getId();
 		rv[2] = "0";
 		rv[3] = r.getProperties().getProperty(ResourceProperties.PROP_PUBVIEW) == null ? "0" : "1";
-
+		rv[4] = ((MailArchiveMessage) r).getMailArchiveHeader().getSubject();
+		rv[5] = ((Message) r).getBody();
+		rv[6] = ((MailArchiveMessage) r).getHtmlBody();
 		return rv;
 	}
 
