@@ -111,6 +111,11 @@
       <version>${sakai.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.sakaiproject</groupId>
+      <artifactId>sakai-db-conversion</artifactId>
+      <version>${sakai.version}</version>
+    </dependency>
+    <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
       <version>${sakai.servletapi.version}</version>
