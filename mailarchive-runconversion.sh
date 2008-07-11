@@ -8,10 +8,10 @@
 #      -p "$CATALINA_HOME/sakai/sakai.properties" \
 #      upgradeschema-oracle.config
 
-#   sh content-runconversion.sh 
-#      -j "/Users/csev/dev/sakai-trunk/apache-tomcat-5.5.23/common/lib/mysql-connector-java-5.1.6-bin.jar" \
-#      -p "/Users/csev/dev/sakai-trunk/apache-tomcat-5.5.23/sakai/sakai.properties" \
-#      upgradeschema-mysql.config
+# sh  mailarchive-runconversion.sh  \
+#       -j "/Users/csev/dev/sakai-trunk/apache-tomcat-5.5.23/common/lib/mysql-connector-java-5.1.6-bin.jar" \
+#       -p "/Users/csev/dev/sakai-trunk/apache-tomcat-5.5.23/sakai/sakai.properties" \
+#       upgradeschema-mysql.config
 
 # The "runconversion.sh" script does not have to be run
 # in place. It could be copied to the working directory.
