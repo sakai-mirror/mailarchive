@@ -45,7 +45,6 @@ import org.sakaiproject.util.commonscodec.CommonsCodecBase64;
 
 import org.sakaiproject.javax.PagingPosition;
 import org.sakaiproject.javax.Filter;
-import org.sakaiproject.javax.Query;
 import org.sakaiproject.util.FormattedText;
 import org.sakaiproject.util.StringUtil;
 import org.sakaiproject.mailarchive.api.MailArchiveMessage;

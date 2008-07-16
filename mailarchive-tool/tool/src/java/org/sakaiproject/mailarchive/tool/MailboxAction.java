@@ -64,7 +64,7 @@ import org.sakaiproject.util.Validator;
 
 import org.sakaiproject.javax.Filter;
 import org.sakaiproject.javax.SearchFilter;
-import org.sakaiproject.javax.Query;
+import org.sakaiproject.javax.Search;
 import org.sakaiproject.javax.Restriction;
 import org.sakaiproject.javax.Order;
 
@@ -127,9 +127,6 @@ public class MailboxAction extends PagedResourceActionII
 	private static final int SORT_SUBJECT = 2;
 
 	/** paging */
-	private static final String STATE_ALL_MESSAGES = "allMessages";
-
-	private static final String STATE_ALL_MESSAGES_SEARCH = "allMessages-search";
 	
 	private static final String STATE_MSG_VIEW_ID = "msg-id";
     
@@ -199,7 +196,7 @@ public class MailboxAction extends PagedResourceActionII
 		try
 		{
 			MailArchiveChannel channel = MailArchiveService.getMailArchiveChannel((String) state.getAttribute(STATE_CHANNEL_REF));
-			Query f = getSearchFilter(search, first, last);
+			Search f = getSearchFilter(search, first, last);
 			if ( sort == SORT_FROM ) 
 			{
 				f.setOrders(new Order[] { new Order("OWNER",ascending) } );
@@ -211,8 +208,6 @@ public class MailboxAction extends PagedResourceActionII
 
 			allMessages = channel.getMessages((Filter) f, ascending, null);
 
-			state.removeAttribute(STATE_ALL_MESSAGES);
-			state.removeAttribute(STATE_ALL_MESSAGES_SEARCH);
 		}
 		catch (Exception e)
 		{
@@ -743,6 +738,8 @@ System.out.println("doList");
                 String msgId = (String) state.getAttribute(STATE_DELETE_CONFIRM_ID);
 System.out.println("doRemove_confirmed id="+msgId);
                 state.removeAttribute(STATE_DELETE_CONFIRM_ID);
+		state.removeAttribute(STATE_COUNT);
+		state.removeAttribute(STATE_COUNT_SEARCH);
 
 		// remove
 		try
@@ -1060,18 +1057,24 @@ System.out.println("doRemove_confirmed id="+msgId);
 
 	} // doPermissions
 
-	private Query getSearchFilter(String search, int first, int last)
+	private Search getSearchFilter(String search, int first, int last)
 	{
 		return new MailMessageSearchFilter(search, first, last);
 	}
 
-	protected class MailMessageSearchFilter extends Query implements SearchFilter
+	protected class MailMessageSearchFilter extends Search implements SearchFilter
 	{
 		public MailMessageSearchFilter(String searchString, int first, int last)
 		{
 			super(searchString);
 			this.setStart(first);
 			this.setLimit(last);
+		}
+
+		// Deal with the name mis-match
+		public String getSearchString()
+		{
+			return this.getQueryString();
 		}
 
 		/**
