@@ -130,11 +130,14 @@ public class MailboxAction extends PagedResourceActionII
 	
 	private static final String STATE_MSG_VIEW_ID = "msg-id";
     
-    	/** State to cache the count of messages **/
+    	/** State to cache the count of messages */
     
 	private static final String STATE_COUNT = "state-cached-count";
     
 	private static final String STATE_COUNT_SEARCH = "state-cached-count-search";   
+
+	/** Default for search suppression threshold */
+        private final int MESSAGE_THRESHOLD_DEFAULT = 2500;
 	
 	/** paging */
 
@@ -462,15 +465,6 @@ System.out.println("buildConfirmModeContext id="+id);
 		// build the menu
 		Menu bar = new MenuImpl(portlet, rundata, (String) state.getAttribute(STATE_ACTION));
 
-		// add paging commands
-		// addListPagingMenus(bar, state);
-
-		// add the search commands
-		// addSearchMenus(bar, state);
-
-		// add the refresh commands
-		// addRefreshMenus(bar, state);
-
 		if (SiteService.allowUpdateSite(ToolManager.getCurrentPlacement().getContext()))
 		{
 			bar.add(new MenuDivider());
@@ -485,6 +479,11 @@ System.out.println("buildConfirmModeContext id="+id);
 		bar.adjustDividers();
 
 		context.put(Menu.CONTEXT_MENU, bar);
+
+		// Decide if we are going to allow searching...
+		int numMessages = sizeResources(state);
+		int messageLimit = getMessageThreshold();
+		context.put("allow-search",new Boolean(numMessages <= messageLimit));
 
 		// output the search field
 		context.put(STATE_SEARCH, state.getAttribute(STATE_SEARCH));
@@ -571,7 +570,6 @@ System.out.println("buildConfirmModeContext id="+id);
 		state.setAttribute(STATE_MSG_VIEW_ID, id);
 
 		String position = runData.getParameters().getString(FORM_ITEM_NUMBER);
-System.out.println("doView position="+position+" id="+id);
 		state.setAttribute(FORM_ITEM_NUMBER, Integer.valueOf(position));
 		
 		// disable auto-updates while in view mode
@@ -584,7 +582,6 @@ System.out.println("doView position="+position+" id="+id);
 	 */
 	public void doList(RunData runData, Context context)
 	{
-System.out.println("doList");
 		// access the portlet element id to find our state
 		String peid = ((JetspeedRunData) runData).getJs_peid();
 		SessionState state = ((JetspeedRunData) runData).getPortletSessionState(peid);
@@ -1108,6 +1105,16 @@ System.out.println("doRemove_confirmed id="+msgId);
 			return true;
 		}
 	}
+
+        /**
+         * get the Message Threshold - above which searching is disabled
+         */
+        private int getMessageThreshold()
+        {
+                return ServerConfigurationService.getInt("sakai.mailbox.search-threshold",
+                                MESSAGE_THRESHOLD_DEFAULT);
+        }
+
 
 } // MailboxAction
 
