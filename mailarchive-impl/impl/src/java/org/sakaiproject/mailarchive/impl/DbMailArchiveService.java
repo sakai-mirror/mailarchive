@@ -71,7 +71,7 @@ public class DbMailArchiveService extends BaseMailArchiveService
 	/** If true, we do our locks in the remote database, otherwise we do them here. */
 	protected boolean m_locksInDb = true;
 
-	protected static final String[] FIELDS = { "MESSAGE_DATE", "OWNER", "DRAFT", "PUBVIEW", "SUBJECT", "BODY", "HTMLBODY"};
+	protected static final String[] FIELDS = { "MESSAGE_DATE", "OWNER", "DRAFT", "PUBVIEW", "SUBJECT", "BODY"};
 
 	protected static final String[] SEARCH_FIELDS = { "OWNER", "SUBJECT", "BODY" };
 

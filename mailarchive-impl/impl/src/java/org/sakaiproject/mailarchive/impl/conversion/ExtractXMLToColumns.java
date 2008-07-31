@@ -98,7 +98,6 @@ public class ExtractXMLToColumns implements SchemaConversionHandler
 	public boolean convertSource(String id, Object source, PreparedStatement updateRecord)
 			throws SQLException
 	{
-
 		// System.out.println("convertSource id="+id+" prep="+updateRecord+" source="+source);
 		String xml = (String) source;
 
@@ -118,7 +117,6 @@ public class ExtractXMLToColumns implements SchemaConversionHandler
 		 * subject="Subject 20080127201341933"/><properties/></message>
 		 */
 		String body = getXmlAttr(xml, "body");
-		String bodyHtml = getXmlAttr(xml, "body-html");
 		String subject = getXmlAttr(xml, "subject");
 
 		byte[] decoded = null;
@@ -129,11 +127,6 @@ public class ExtractXMLToColumns implements SchemaConversionHandler
 				decoded = CommonsCodecBase64.decodeBase64(body.getBytes("UTF-8"));
 				body = new String(decoded, "UTF-8");
 			}
-			if ( bodyHtml != null )
-			{
-				decoded = CommonsCodecBase64.decodeBase64(bodyHtml.getBytes("UTF-8"));
-				bodyHtml = new String(decoded, "UTF-8");
-			}
 		} 
 		catch (Exception e) 
 		{
@@ -143,8 +136,7 @@ public class ExtractXMLToColumns implements SchemaConversionHandler
 
 		updateRecord.setString(1, subject);
 		updateRecord.setString(2, body);
-		updateRecord.setString(3, bodyHtml);
-		updateRecord.setString(4, id);
+		updateRecord.setString(3, id);
 		return true;
 	}
 
