@@ -961,7 +961,13 @@ System.out.println("doRemove_confirmed id="+msgId);
 						// then add the desired alias
 						if (alias != null)
 						{
-							AliasService.setAlias(alias, channel.getReference());
+							//check if alias = "postmaster"
+							// SAK-13054
+							if (alias.equalsIgnoreCase("postmaster")) {
+								addAlert(state, rb.getString("theemaali4"));
+							} else {
+								AliasService.setAlias(alias, channel.getReference());
+							}
 						}
 					}
 					catch (Exception any)
