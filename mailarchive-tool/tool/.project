@@ -1,20 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-  <name>sakai-mailarchive-tool</name>
-  <comment/>
-  <projects>
-    <project>sakai-courier-api</project>
-    <project>sakai-mailarchive-api</project>
-    <project>sakai-mergedlist-util</project>
-    <project>sakai-message-api</project>
-    <project>sakai-velocity-tool</project>
-    <project>sakai-velocity-tool-api</project>
-  </projects>
-  <buildSpec>
-    <buildCommand>
-      <name>org.eclipse.jdt.core.javabuilder</name>
-    </buildCommand>
-  </buildSpec>
-  <natures>
-    <nature>org.eclipse.jdt.core.javanature</nature>
-  </natures>
+	<name>sakai-mailarchive-tool</name>
+	<comment></comment>
+	<projects>
+		<project>sakai-courier-api</project>
+		<project>sakai-mailarchive-api</project>
+		<project>sakai-mergedlist-util</project>
+		<project>sakai-message-api</project>
+		<project>sakai-velocity-tool</project>
+		<project>sakai-velocity-tool-api</project>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.eclipse.wst.common.project.facet.core.builder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+		<buildCommand>
+			<name>org.eclipse.jdt.core.javabuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.eclipse.jdt.core.javanature</nature>
+		<nature>org.eclipse.wst.common.project.facet.core.nature</nature>
+	</natures>
 </projectDescription>
