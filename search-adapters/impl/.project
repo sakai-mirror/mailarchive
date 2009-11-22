@@ -2,8 +2,7 @@
   <name>sakai-search-adapters-impl</name>
   <comment/>
   <projects>
-    <project>sakai-search-api</project>
-    <project>sakai-search-util</project>
+    <project>sakai-message-api</project>
   </projects>
   <buildSpec>
     <buildCommand>
