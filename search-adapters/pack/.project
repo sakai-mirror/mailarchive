@@ -3,7 +3,6 @@
   <comment/>
   <projects>
     <project>sakai-search-adapters-impl</project>
-    <project>sakai-search-util</project>
   </projects>
   <buildSpec>
     <buildCommand>
