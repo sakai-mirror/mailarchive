@@ -3,7 +3,6 @@
   <comment/>
   <projects>
     <project>sakai-mailarchive-impl</project>
-    <project>sakai-message-impl</project>
   </projects>
   <buildSpec>
     <buildCommand>

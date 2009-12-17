@@ -1,9 +1,7 @@
 <projectDescription>
   <name>sakai-mailarchive-api</name>
   <comment/>
-  <projects>
-    <project>sakai-message-api</project>
-  </projects>
+  <projects/>
   <buildSpec>
     <buildCommand>
       <name>org.eclipse.jdt.core.javabuilder</name>
