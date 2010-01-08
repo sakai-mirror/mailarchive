@@ -191,9 +191,9 @@ public class SakaiMailet extends GenericMailet
 
 			}
 
+           //Add headers for a null subject, keep null in DB
 			if (subject == null) {
-			    mailHeaders.add(MailArchiveService.HEADER_SUBJECT + ": <no subject>");
-			    subject = "<no subject>";
+                mailHeaders.add(MailArchiveService.HEADER_SUBJECT + ": <"+ rb.getString("err_no_subject") +">");
 			}
 
 			M_log.debug(id + " : mail: from:" + from + " sent: " + TimeService.newTime(sent.getTime()).toStringLocalFull() + " subject: "
