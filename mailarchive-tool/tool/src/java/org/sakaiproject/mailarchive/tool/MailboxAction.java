@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
+import java.util.Map.Entry;
 
 import org.sakaiproject.alias.api.Alias;
 import org.sakaiproject.alias.cover.AliasService;
@@ -45,6 +46,7 @@ import org.sakaiproject.entity.api.Reference;
 import org.sakaiproject.entity.cover.EntityManager;
 import org.sakaiproject.event.api.SessionState;
 import org.sakaiproject.exception.IdUnusedException;
+import org.sakaiproject.exception.InUseException;
 import org.sakaiproject.exception.PermissionException;
 import org.sakaiproject.javax.Filter;
 import org.sakaiproject.javax.Order;
@@ -175,7 +177,7 @@ public class MailboxAction extends PagedResourceActionII
 			MailArchiveChannel channel = MailArchiveService.getMailArchiveChannel((String) state.getAttribute(STATE_CHANNEL_REF));
 			int cCount = channel.getCount((Filter) getSearchFilter(search, 0, 0));
 
-			lastCount = new Integer(cCount);
+			lastCount = Integer.valueOf(cCount);
 			state.setAttribute(STATE_COUNT, lastCount);
 			state.setAttribute(STATE_COUNT_SEARCH, search);
 			return cCount;
@@ -199,7 +201,7 @@ public class MailboxAction extends PagedResourceActionII
 		boolean ascending = ((Boolean) state.getAttribute(STATE_ASCENDING)).booleanValue();
 		int sort = ((Integer) state.getAttribute(STATE_SORT)).intValue();		
 		String search = (String) state.getAttribute(STATE_SEARCH);
-		PagingPosition pages = new PagingPosition(first, last);
+		
 		
 		try
 		{
@@ -261,17 +263,17 @@ public class MailboxAction extends PagedResourceActionII
 			
 			if (state.getAttribute(STATE_ASCENDING) == null)
 			{
-				state.setAttribute(STATE_ASCENDING, new Boolean(false));
+				state.setAttribute(STATE_ASCENDING, Boolean.valueOf(false));
 			}
 
 			if (state.getAttribute(STATE_SORT) == null)
 			{
-				state.setAttribute(STATE_SORT, new Integer(SORT_DATE));
+				state.setAttribute(STATE_SORT, Integer.valueOf(SORT_DATE));
 			}
 
 			if (state.getAttribute(STATE_VIEW_HEADERS) == null)
 			{
-				state.setAttribute(STATE_VIEW_HEADERS, new Boolean(false));
+				state.setAttribute(STATE_VIEW_HEADERS, Boolean.valueOf(false));
 			}
 
 		}
@@ -288,7 +290,6 @@ public class MailboxAction extends PagedResourceActionII
 		String mode = (String) state.getAttribute(STATE_MODE);
 
 		context.put(Menu.CONTEXT_ACTION, state.getAttribute(STATE_ACTION));
-		String search = (String) state.getAttribute(STATE_SEARCH);
 		
 		String alertMessage = (String) state.getAttribute(STATE_ALERT_MESSAGE);
 		if ( alertMessage != null )
@@ -357,10 +358,10 @@ public class MailboxAction extends PagedResourceActionII
 		context.put("viewPos",viewPos);
 
 		context.put("nextPos",nextPos);
-		context.put("goNPButton", new Boolean(goNext));
+		context.put("goNPButton", Boolean.valueOf(goNext));
 
 		context.put("prevPos",prevPos);
-		context.put("goPPButton", new Boolean(goPrev));
+		context.put("goPPButton", Boolean.valueOf(goPrev));
 
 		// prepare the sort of messages
 		context.put("tlang", rb);
@@ -486,7 +487,7 @@ public class MailboxAction extends PagedResourceActionII
 		// Decide if we are going to allow searching...
 		int numMessages = sizeResources(state);
 		int messageLimit = getMessageThreshold();
-		context.put("allow-search",new Boolean(numMessages <= messageLimit));
+		context.put("allow-search",Boolean.valueOf(numMessages <= messageLimit));
 
 		// output the search field
 		context.put(STATE_SEARCH, state.getAttribute(STATE_SEARCH));
@@ -609,7 +610,7 @@ public class MailboxAction extends PagedResourceActionII
 		SessionState state = ((JetspeedRunData) runData).getPortletSessionState(peid);
 
 		// switch to view mode
-		state.setAttribute(STATE_VIEW_HEADERS, new Boolean(true));
+		state.setAttribute(STATE_VIEW_HEADERS, Boolean.valueOf(true));
 
 	} // doView_headers
 
@@ -623,7 +624,7 @@ public class MailboxAction extends PagedResourceActionII
 		SessionState state = ((JetspeedRunData) runData).getPortletSessionState(peid);
 
 		// switch to view mode
-		state.setAttribute(STATE_VIEW_HEADERS, new Boolean(false));
+		state.setAttribute(STATE_VIEW_HEADERS, Boolean.valueOf(false));
 
 	} // doHide_headers
 
@@ -643,13 +644,13 @@ public class MailboxAction extends PagedResourceActionII
 		if (((Integer) state.getAttribute(STATE_SORT)).intValue() == SORT_FROM)
 		{
 			boolean order = !((Boolean) state.getAttribute(STATE_ASCENDING)).booleanValue();
-			state.setAttribute(STATE_ASCENDING, new Boolean(order));
+			state.setAttribute(STATE_ASCENDING, Boolean.valueOf(order));
 		}
 
 		// set state
 		else
 		{
-			state.setAttribute(STATE_SORT, new Integer(SORT_FROM));
+			state.setAttribute(STATE_SORT, Integer.valueOf(SORT_FROM));
 		}
 
 	} // doSort_from
@@ -670,13 +671,13 @@ public class MailboxAction extends PagedResourceActionII
 		if (((Integer) state.getAttribute(STATE_SORT)).intValue() == SORT_DATE)
 		{
 			boolean order = !((Boolean) state.getAttribute(STATE_ASCENDING)).booleanValue();
-			state.setAttribute(STATE_ASCENDING, new Boolean(order));
+			state.setAttribute(STATE_ASCENDING, Boolean.valueOf(order));
 		}
 
 		// set state
 		else
 		{
-			state.setAttribute(STATE_SORT, new Integer(SORT_DATE));
+			state.setAttribute(STATE_SORT, Integer.valueOf(SORT_DATE));
 		}
 
 	} // doSort_date
@@ -697,13 +698,13 @@ public class MailboxAction extends PagedResourceActionII
 		if (((Integer) state.getAttribute(STATE_SORT)).intValue() == SORT_SUBJECT)
 		{
 			boolean order = !((Boolean) state.getAttribute(STATE_ASCENDING)).booleanValue();
-			state.setAttribute(STATE_ASCENDING, new Boolean(order));
+			state.setAttribute(STATE_ASCENDING, Boolean.valueOf(order));
 		}
 
 		// set state
 		else
 		{
-			state.setAttribute(STATE_SORT, new Integer(SORT_SUBJECT));
+			state.setAttribute(STATE_SORT, Integer.valueOf(SORT_SUBJECT));
 		}
 
 	} // doSort_subject
@@ -882,25 +883,14 @@ public class MailboxAction extends PagedResourceActionII
 		catch (Exception e)
 		{
 			addAlert(state, rb.getString("cannot1"));
-            // FIXME confusing code: this exception will cause a NPE below
-			channel = null;
+            channel = null;
 		}
 
-		// first validate - page size
-		// int size = 0;
-		// try
-		// {
-		// size = Integer.parseInt(pagesize);
-		// if (size <= 0)
-		// {
-		// addAlert(state,rb.getString("pagsiz"));
-		// }
-		// }
-		// catch (Exception any)
-		// {
-		// addAlert(state, rb.getString("pagsiz"));
-		// }
-
+		if (channel == null)
+		{
+			addAlert(state, rb.getString("theemaarc"));
+			return;
+		}
 		// validate the email alias
 		if (alias != null)
 		{
@@ -912,16 +902,15 @@ public class MailboxAction extends PagedResourceActionII
 
 		// make sure we can get to the channel
 		MailArchiveChannelEdit edit = null;
-		try
-		{
-		    // FIXME if channel is null then this causes a NPE, if this is desired it should be moved up nearer to the other code
-	        edit = (MailArchiveChannelEdit) MailArchiveService.editChannel(channel.getReference());
-		}
-		catch (Exception any)
-		{
-			addAlert(state, rb.getString("theemaarc"));
-		}
-
+		try {
+			edit = (MailArchiveChannelEdit) MailArchiveService.editChannel(channel.getReference());
+		} catch (IdUnusedException e1) {
+			addAlert(state, rb.getString("theemaali"));
+		} catch (PermissionException e1) {
+			addAlert(state, rb.getString("theemaali"));
+		} catch (InUseException e1) {
+			addAlert(state, rb.getString("theemaali"));		}
+		
 		// if all is well, save
 		if (state.getAttribute(STATE_MESSAGE) == null)
 		{
@@ -986,20 +975,20 @@ public class MailboxAction extends PagedResourceActionII
 			{
 				boolean modified = false;
 				// update the channel for open (if changed)
-				boolean ss = new Boolean(open).booleanValue();
+				boolean ss = Boolean.valueOf(open).booleanValue();
 				if (channel.getOpen() != ss)
 				{
 					edit.setOpen(ss);
 					modified = true;
 				}
 				
-				ss = new Boolean(replyToList).booleanValue();
+				ss = Boolean.valueOf(replyToList).booleanValue();
 				if (channel.getReplyToList() != ss)
 				{
 					edit.setReplyToList(ss);
 					modified = true;
 				}
-				ss = new Boolean(sendToList).booleanValue();
+				ss = Boolean.valueOf(sendToList).booleanValue();
 				if (channel.getSendToList() != ss)
 				{
 					edit.setSendToList(ss);
@@ -1094,10 +1083,11 @@ public class MailboxAction extends PagedResourceActionII
 		// ... pass the resource loader object
 		ResourceLoader pRb = new ResourceLoader("permissions");
 		HashMap<String, String> pRbValues = new HashMap<String, String>();
-		for (Iterator iKeys = pRb.keySet().iterator();iKeys.hasNext();)
+		for (Iterator<Entry<String, String>> iKeys = pRb.entrySet().iterator();iKeys.hasNext();)
 		{
-			String key = (String) iKeys.next();
-			pRbValues.put(key, (String) pRb.get(key));
+			Entry<String, String> entry = iKeys.next(); 
+			String key = entry.getKey();
+			pRbValues.put(key, entry.getValue());
 		}
 		state.setAttribute("permissionDescriptions",  pRbValues);
 		
