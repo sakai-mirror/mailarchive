@@ -60,7 +60,7 @@
 				#if ($pagesize != 0)
 					#if ($goPPButton == "true")
 						<form name="firstpageForm" class="inlineForm" method="post" action="#toolForm("$action")">
-							<input type="submit" name="eventSubmit_doList_first" value="|&lt;" title="$tlang.getString("list.first")" />
+							<fieldset><legend>$tlang.getString("list.first")</legend><input type="submit" name="eventSubmit_doList_first" value="|&lt;" title="$tlang.getString("list.first")" /></fieldset>
 						</form>
 					#else
 						<form name="firstpageForm" class="inlineForm" method="post" action="#toolForm("$action")">
@@ -69,7 +69,7 @@
 					#end
 					#if ($goPPButton == "true")
 						<form name="nextpageForm" class="inlineForm" method="post" action="#toolForm("$action")">
-							<input type="submit" name="eventSubmit_doList_prev" value="&lt;" title="$tlang.getString("list.prev") $pagesize"  accesskey="p" />
+							<fieldset><legend>$tlang.getString("list.prev") $pagesize</legend><input type="submit" name="eventSubmit_doList_prev" value="&lt;" title="$tlang.getString("list.prev") $pagesize"  accesskey="p" /></fieldset>
 						</form>
 					#else
 						<form name="nextpageForm" class="inlineForm" method="post" action="#toolForm("$action")">
@@ -92,7 +92,7 @@
 				#if ($pagesize != 0)
 					#if ($goNPButton == "true")
 						<form name="nextpageForm" class="inlineForm" method="post" action="#toolForm("$action")">
-							<input type="submit" name="eventSubmit_doList_next" value="&gt;" title="$tlang.getString("list.next") $pagesize"  accesskey="n" />
+							<fieldset><legend>$tlang.getString("list.next") $pagesize</legend><input type="submit" name="eventSubmit_doList_next" value="&gt;" title="$tlang.getString("list.next") $pagesize"  accesskey="n" /></fieldset>
 						</form>
 					#else
 						<form name="nextpageForm" class="inlineForm" method="post" action="#toolForm("$action")">
@@ -101,7 +101,7 @@
 					#end
 					#if ($goNPButton == "true")
 						<form name="lastpageForm" class="inlineForm" method="post" action="#toolForm("$action")">
-							<input type="submit" name="eventSubmit_doList_last" value="&gt;|" title="$tlang.getString("list.last")" />
+							<fieldset><legend>$tlang.getString("list.last")</legend><input type="submit" name="eventSubmit_doList_last" value="&gt;|" title="$tlang.getString("list.last")" /></fieldset>
 						</form>
 					#else
 						<form name="lastpageForm" class="inlineForm" method="post" action="#toolForm("$action")">
