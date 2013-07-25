@@ -34,6 +34,8 @@ import java.util.HashMap;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -149,6 +151,11 @@ public class JamesServlet extends HttpServlet
 		super.destroy();
 	}
 
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        // do not return anything - SAK-23222
+    }
+    
 	protected static String getLogDirectory()
 	{
 		String logDir = StringUtils.trimToNull(ServerConfigurationService.getString("smtp.logdir"));
